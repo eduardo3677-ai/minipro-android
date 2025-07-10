@@ -77,7 +77,25 @@ static struct voltage_s {
   tl866ii_vcc_voltages[] = { { "3.3", 0x01 }, { "4", 0x02 },   { "4.5", 0x03 },
 			     { "5", 0x00 },   { "5.5", 0x04 }, { "6.5", 0x05 },
 			     { NULL, 0x00 } },
-  t48_vcc_voltages[] = { { "1.75", 0x01 },
+  t48_vcc_voltages[] = { { "3.3", 0x01 }, { "4", 0x02 },   { "4.5", 0x03 },
+			     { "5", 0x00 },   { "5.5", 0x04 }, { "6.5", 0x05 },
+			     { NULL, 0x00 } },
+  t48_vpp_voltages[] = { { "9", 0x10 },    { "9.5", 0x20 },
+			     { "10", 0x30 },   { "11", 0x40 },
+			     { "11.5", 0x50 }, { "12", 0x00 },
+			     { "12.5", 0x60 }, { "13", 0x70 },
+			     { "13.5", 0x80 }, { "14", 0x90 },
+			     { "14.5", 0xa0 }, { "15.5", 0xb0 },
+			     { "16", 0xc0 },   { "16.5", 0xd0 },
+			     { "17", 0xe0 },   { "18", 0xf0 },
+			     { "21", 0xf2 },   { "25", 0xf1 },
+			     { NULL, 0x00 } },
+  logic_voltages[] = { { "5", 0x00 },
+		       { "3.3", 0x01 },
+		       { "2.5", 0x02 },
+		       { "1.8", 0x03 },
+		       { NULL, 0x00 } },
+  t48_custom_vcc_voltages[] = { { "1.75", 0x01 },
                          { "1.8",  0x02 },
                          { "1.9",  0x03 },
                          { "2",  0x04 },
@@ -122,7 +140,7 @@ static struct voltage_s {
                          { "6.8",  0x3e },
                          { "6.9",  0x3f },
                          { NULL, 0x00 } },
-  t48_vpp_voltages[] = { { "9", 0x00 },
+  t48_custom_vpp_voltages[] = { { "9", 0x00 },
                          { "9.5", 0x01 },
                          { "10", 0x03 },
                          { "11", 0x07 },
@@ -140,13 +158,7 @@ static struct voltage_s {
                          { "18", 0x23 },
                          { "21", 0x2f },
                          { "25", 0x3e },
-                         { NULL, 0x00 } },
-  logic_voltages[] = { { "3.5", 0x04 },
-		       { "3.3", 0x03 },
-		       { "3", 0x02 },
-		       { "2.5", 0x01 },
-		       { "2.35", 0x00 },
-		       { NULL, 0x00 } };
+                         { NULL, 0x00 } };
 
 static struct option long_options[] = {
 	{ "pulse", required_argument, NULL, 2 },
@@ -368,6 +380,11 @@ static struct voltage_s *get_vpp_voltages(minipro_handle_t *handle)
 		return tl866ii_vpp_voltages;
 		break;
 	case MP_T48:
+		if (handle->device->flags.custom_protocol)
+			return t48_custom_vpp_voltages;
+		else
+			return t48_vpp_voltages;
+		break;
 	case MP_T56:
 		return t48_vpp_voltages;
 		break;
@@ -386,6 +403,11 @@ static struct voltage_s *get_vcc_voltages(minipro_handle_t *handle)
 		return tl866ii_vcc_voltages;
 		break;
 	case MP_T48:
+		if (handle->device->flags.custom_protocol)
+			return t48_custom_vcc_voltages;
+		else
+			return t48_vcc_voltages;
+		break;
 	case MP_T56:
 		return t48_vcc_voltages;
 		break;
