@@ -243,7 +243,7 @@ int write_payload2(void *handle, uint8_t *buffer, size_t length, size_t limit)
 		if (bytes_transferred == length)
 			return status;
 
-		fprintf(stderr, "%s: short write %d/%lu\n", __func__, bytes_transferred, length);
+		fprintf(stderr, "%s: short write %d/%zu\n", __func__, bytes_transferred, length);
 		return EXIT_FAILURE;
 	}
 
