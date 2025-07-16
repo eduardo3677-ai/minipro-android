@@ -270,7 +270,7 @@ int get_programmer_version(uint8_t *version)
 	return EXIT_SUCCESS;
 }
 
-void print_supported_programmers_and_exit()
+void print_supported_programmers_and_exit(cmdopts_t *cmdopts)
 {
 	fprintf(stderr, "tl866a:  TL866CS/A\n"
 			"tl866ii: TL866II+\n"
@@ -280,7 +280,7 @@ void print_supported_programmers_and_exit()
 	exit(EXIT_SUCCESS);
 }
 
-void print_connected_programmer_and_exit()
+void print_connected_programmer_and_exit(cmdopts_t *cmdopts)
 {
 	minipro_handle_t *handle = minipro_open(NO_VERBOSE);
 	if (!handle) {

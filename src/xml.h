@@ -34,9 +34,10 @@ typedef struct {
 	size_t i, g, e;
 } MemMan;
 
-typedef struct {
+typedef struct Parser {
 	void *inputcbdata;
-	int (*worker)();
+	int (*worker)(int type, const char *tag, size_t taglen,
+		      struct Parser *parser);
 	void *userdata;
 	MemMan mm;
 	size_t level;
