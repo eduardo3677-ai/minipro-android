@@ -7,7 +7,7 @@ programmers by Xgecu.
 .I minipro
 is an Open Source tool intended to become a complete cross-platform
 replacement for the proprietary utility from Xgecu.  Currently it
-supports more than 13000 of target devices - including AVRs, PICs as
+supports more than 13000 target devices - including AVRs, PICs as
 well as a huge number of other microcontrollers and various memory
 chips.
 
@@ -114,7 +114,7 @@ Specify various options.  For multiple options, use
 multiple times.  For example:
 .B \-o vpp=12 -o vcc=5.5
 or long options:
-.B -vpp=12 --vcc=5.5
+.B \--vpp=12 \--vcc=5.5
 .br
 Valid options are:
 .RS
@@ -250,7 +250,7 @@ option.
 flags will read/write/verify/blank check fuses, user id or lock config
 section. User ID is Microchip PIC MPU family specific. For example:
 .B minipro -p atmega32 -b --fuses
-will check if fuse bits are in their default state (that is, blank state)
+will check if fuse bits are in their default state (that is, blank).
 
 .P
 Use
@@ -378,7 +378,7 @@ Custom chips can be added in the
 .B infoic.xml
 file, but it must be noted that the since content is generated from the
 .B infoic.dll
-file , the custom chips should be added in a proper section of the xml file.
+file, the custom chips should be added in a proper section of the XML file.
 
 Add any new chip as an
 .B <ic>
@@ -387,8 +387,8 @@ section in a proper
 section of the file.
 
 It must be also noted that the pinout is hardcoded in the device firmware, so if
-the chip has a custom pinout, the use of bit banging technique is required, limiting the
-functionality to only erading it as a PROM type.
+the chip has a custom pinout, use of a bit-banging technique is required, limiting the
+functionality to only reading it as a PROM type.
 
 In this case, the
 .B <protocol_id>
@@ -398,12 +398,12 @@ and the
 .B <variant>
 value must be set to the pinout value defined in the
 .B prom_table
-array in
+array in the
 .B prom.c
 file.
 
-For example, the D2364C PROM has a slightly different pinout than any DIP24 PROM, thus the pins has been
-exchanged in the prom.c file. The index 0x0b has been assigned to this pinout. So the resulting xml entry is:
+For example, the D2364C PROM has a slightly different pinout than any DIP24 PROM, thus the pins have been
+exchanged in the prom.c file. The index 0x0b has been assigned to this pinout. So the resulting XML entry is:
 
     <custom name="NEC">
           <ic name="D2364C@DIP24"
@@ -449,14 +449,14 @@ This is how the hex/srec parsers were tested for reading from stdin.
 intel hex by the srec_cat utility. Finally the converted data is passed
 to our minipro which will read this data, convert it to binary by
 decoding the intel hex format from stdin and write it to the specified
-chip.  Note the -r- which tells to read from stdin instead from a
+chip.  Note the -r- which tells it to read from stdin instead from a
 regular file.  This is just a test command to test the ihex/srec
 parsers.  Don't use this in real life (convert from binary to ihex then
 from ihex to binary).
 
-You can also read a chip and write the data to the stdout like this:
+You can also read a chip and write the data to stdout like this:
 
-.B minipro -p w49f002u -r- -f ihex.
+.B minipro -p w49f002u -r- -f ihex
 
 You can then pass the output to another command line tool with | for
 other processing, etc.
@@ -478,7 +478,7 @@ format looks like.
 
 .B minipro -p 7404 -T
 .br
-Check whether a 74(LS/HC/...)04 hex NOT gate chip.
+Check whether a 74(LS/HC/...)04 hex NOT gate chip works correctly.
 
 .B minipro -p \fB"AT29C256@DIP28\fR" -w foobar.bin
 .br
@@ -509,7 +509,7 @@ Xgecu, formerly Autoelectric.  Its website is
 .SH DISTRIBUTION
 The canonical repository for
 .I minipro
-is at Gitlab:
+is at GitLab:
 .br
 .BR https://gitlab.com/DavidGriffith/minipro/
 .br
@@ -520,4 +520,4 @@ your option) any later version.
 .br
 This software is offered as-is with no warranty or liability.  If you
 find a bug or would like minipro to do something it doesn't currently
-do, please visit the above Gitlab website and report your concerns.
+do, please visit the above GitLab website and report your concerns.
