@@ -308,7 +308,8 @@ boards and are updated whenever the programmer's firmware is updated.
 The T56 is different in that it requires its algorithms to be loaded
 from the controlling program.  Those algorithms are installed by the
 official Xgecu software to the host computer.  Because of the copyright
-on that package, the algorithms cannot be included in the minipro
+on that package, the algorithms cannot be included in the
+.I minipro
 distribution.  Fortunately a script for doing that is provided.
 
 To allow
@@ -358,7 +359,7 @@ For the T56, use the "updateT56.dat" file.
 .TP
 .B \-F <filename>
 Update firmware.
-.B minipro
+.I minipro
 will verify the firmware file and ask if you wish to proceed with
 writing the file to the programmer.
 
@@ -436,7 +437,7 @@ exchanged in the prom.c file. The index 0x0b has been assigned to this pinout. S
 
 .SH PIPES
 
-.B Minipro
+.I minipro
 supports reading and writing to standard input and output.  To do this,
 use a dash (\-) as a filename for the
 .B \-w
@@ -451,7 +452,9 @@ head \-c 256k < /dev/urandom | srec_cat \- \-bin \-o \- \-intel \-Address_Length
 This is how the hex/srec parsers were tested for reading from stdin.
 256kb of random binary data is generated then converted from binary to
 intel hex by the srec_cat utility. Finally the converted data is passed
-to our minipro which will read this data, convert it to binary by
+to our
+.I minipro
+which will read this data, convert it to binary by
 decoding the intel hex format from stdin and write it to the specified
 chip.  Note the \-r\- which tells it to read from stdin instead from a
 regular file.  This is just a test command to test the ihex/srec
@@ -527,5 +530,7 @@ your option) any later version.
 .fi
 
 This software is offered as-is with no warranty or liability.  If you
-find a bug or would like minipro to do something it doesn't currently
+find a bug or would like
+.I minipro
+to do something it doesn't currently
 do, please visit the above GitLab website and report your concerns.
