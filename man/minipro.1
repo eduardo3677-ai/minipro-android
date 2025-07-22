@@ -484,13 +484,13 @@ format looks like.
 .br
 Check whether a 74(LS/HC/...)04 hex NOT gate chip works correctly.
 
-.B minipro \-p \fB"AT29C256@DIP28\fR" \-w foobar.bin
+.B minipro \-p "AT29C256@DIP28" \-w foobar.bin
 .br
 Write the contents of
 .B foobar.bin
 to an AT29C256 256 kilobit (32-kilobytes) electrically-erasable Flash
 EPROM.  Remember to put single or double quotes around the device name
-to prevent the shell from interpreting the \fB"@\fR" (at sign).
+to prevent the shell from interpreting the "@" (at sign).
 
 .SH CAVEATS
 The TL866A and TL866CS programmers appear to have a firmware bug such
