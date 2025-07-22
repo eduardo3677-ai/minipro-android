@@ -1,4 +1,4 @@
-.TH MINIPRO 1 "12 April 2025 (v0.7.3)"
+.TH MINIPRO 1 2025-04-12
 .SH NAME
 minipro \- free and open command-line program for controlling chip
 programmers by Xgecu
@@ -221,7 +221,6 @@ Show brief help and quit.
 
 
 .SH NOTES FOR READING AND WRITING
-.P
 If
 .B \-c
 is omitted and
@@ -391,9 +390,9 @@ section in a proper
 .B <custom name="MyCustom">
 section of the file.
 
-It must be also noted that the pinout is hardcoded in the device firmware, so if
-the chip has a custom pinout, use of a bit-banging technique is required, limiting the
-functionality to only reading it as a PROM type.
+It must be also noted that the pinout is hardcoded in the device firmware, so
+if the chip has a custom pinout, use of a bit-banging technique is required,
+limiting the functionality to only reading it as a PROM type.
 
 In this case, the
 .B <protocol_id>
@@ -407,8 +406,9 @@ array in the
 .B prom.c
 file.
 
-For example, the D2364C PROM has a slightly different pinout than any DIP24 PROM, thus the pins have been
-exchanged in the prom.c file. The index 0x0b has been assigned to this pinout. So the resulting XML entry is:
+For example, the D2364C PROM has a slightly different pinout than any DIP24
+PROM, thus the pins have been exchanged in the prom.c file. The index 0x0b has
+been assigned to this pinout. So the resulting XML entry is:
 
     <custom name="NEC">
           <ic name="D2364C@DIP24"
@@ -447,7 +447,9 @@ options.
 
 For example:
 
-head \-c 256k < /dev/urandom | srec_cat \- \-bin \-o \- \-intel \-Address_Length=4 \-obs=16 | minipro \-p w49f002u \-w\-
+head \-c 256k < /dev/urandom
+| srec_cat \- \-bin \-o \- \-intel \-Address_Length=4 \-obs=16
+| minipro \-p w49f002u \-w\-
 
 This is how the hex/srec parsers were tested for reading from stdin.
 256kb of random binary data is generated then converted from binary to
