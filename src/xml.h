@@ -23,7 +23,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #define _FILE_OFFSET_BITS 64
 
 #include <stddef.h>
-#include <stdint.h>
 
 typedef struct {
 	size_t z;
@@ -31,7 +30,7 @@ typedef struct {
 } Memblock;
 
 typedef struct {
-	uint8_t *b;
+	char *b;
 	size_t i, g, e;
 } MemMan;
 
@@ -41,7 +40,7 @@ typedef struct {
 	void *userdata;
 	MemMan mm;
 	size_t level;
-	const uint8_t *content;
+	const char *content;
 	size_t contentlen;
 } Parser;
 
