@@ -160,11 +160,22 @@ static struct voltage_s {
                          { "25", 0x3e },
                          { NULL, 0x00 } };
 
+static struct spi_speed_s {
+	const char *name;
+	uint8_t value;
+} t48_spi_speeds[] = {
+			{ "3", 0x0 }, { "3.0", 0x00 },
+			{ "7.5", 0x01 },
+			{ "15", 0x02 }, { "15.0", 0x02 },
+			{ "30", 0x03 }, { "30.0", 0x03 },
+			{ NULL, 0x00 } };
+
 static struct option long_options[] = {
 	{ "pulse", required_argument, NULL, 2 },
 	{ "vpp", required_argument, NULL, 2 },
 	{ "vdd", required_argument, NULL, 2 },
 	{ "vcc", required_argument, NULL, 2 },
+	{ "speed", required_argument, NULL, 2},
 	{ "fuses", no_argument, NULL, 1 },
 	{ "uid", no_argument, NULL, 1 },
 	{ "lock", no_argument, NULL, 1 },
@@ -460,6 +471,19 @@ int set_voltage(minipro_handle_t *handle, char *value, uint8_t *target,
 	return EXIT_FAILURE;
 }
 
+int set_spi_speed(minipro_handle_t *handle, char *value, uint8_t *spi_speed) 
+{
+	struct spi_speed_s *speed = t48_spi_speeds;
+	while (speed->name) {
+		if (!strcasecmp(speed->name, value)) {
+			*spi_speed = speed->value;
+			return EXIT_SUCCESS;
+		}
+		speed++;
+	}
+	return EXIT_FAILURE;
+}
+
 int get_device(minipro_handle_t *handle)
 {
 	db_data_t db_data;
@@ -663,6 +687,11 @@ int parse_options(minipro_handle_t *handle, int argc, char **argv)
 						VCC_VOLTAGE))
 					return EXIT_FAILURE;
 				break;
+			case 4:
+				if (set_spi_speed(handle, optarg,
+						&handle->cmdopts->spi_speed))
+					return EXIT_FAILURE; 
+				break;
 			default:
 				return EXIT_FAILURE;
 			}
@@ -693,6 +722,10 @@ int parse_options(minipro_handle_t *handle, int argc, char **argv)
 				if (set_voltage(handle, value,
 						&device->voltages.vcc,
 						VCC_VOLTAGE))
+					return EXIT_FAILURE;
+			} else if (!strcasecmp(option, "speed")) {
+				if (set_spi_speed(handle, value,
+						&handle->cmdopts->spi_speed))
 					return EXIT_FAILURE;
 			} else
 				return EXIT_FAILURE;
@@ -833,15 +866,15 @@ void parse_cmdline(int argc, char **argv, cmdopts_t *cmdopts)
 	void (*p_func)(cmdopts_t *) = NULL;
 
 	memset(cmdopts, 0, sizeof(cmdopts_t));
-	long_options[4].flag = &cmdopts->filter_fuses;
-	long_options[5].flag = &cmdopts->filter_uid;
-	long_options[6].flag = &cmdopts->filter_locks;
+	long_options[5].flag = &cmdopts->filter_fuses;
+	long_options[6].flag = &cmdopts->filter_uid;
+	long_options[7].flag = &cmdopts->filter_locks;
 	while ((c = getopt_long(argc, argv,
 				"lL:q:Qkd:ea:zEbTuPvxyr:w:m:p:c:o:iIsSVhDtf:F:",
 				long_options, NULL)) != -1) {
 		switch (c) {
 		case 0:
-		case 2: /* Skip vdd, vcc, vpp, pulse here */
+		case 2: /* Skip vdd, vcc, vpp, pulse, speed here */
 			break;
 		case 3:
 			cmdopts->infoic_path = optarg; /* Custom infoic.xml */

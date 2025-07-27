@@ -246,6 +246,7 @@ typedef struct cmdopts_s {
 		V_1V8 = 0,
 		V_3V3
 	} vopt;
+	uint8_t spi_speed;
 	uint8_t no_erase;
 	uint8_t protect_off;
 	uint8_t protect_on;
