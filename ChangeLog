@@ -1,3 +1,32 @@
+Summary of changes between minipro 0.7.3 and minipro 0.7.4
+==========================================================
+
+Minipro 0.7.4 was released on Saturday August 2, 2025
+
+NEW FEATURES
+
+- Allow setting of T48 clock speed.
+
+- T48 bitbang improvements.
+
+- Allow different voltages for custom protocols on T48.
+
+- Lots of other T48 support items.
+
+
+BUG FIXES
+
+- Fixed lint warnings.
+
+- Fixed C23 language standard complaints.
+
+- Removed TL866A 32 pin logic restriction.
+
+- Fixed segfault when copying chip with only one name.
+
+- Clarified and expanded build instructions.
+
+
 Summary of changes between minipro 0.7.2 and minipro 0.7.3
 ==========================================================
 
