@@ -24,16 +24,16 @@
 #include <string.h>
 #include "database.h"
 #include "minipro.h"
+
 #include "tl866a.h"
 #include "tl866iiplus.h"
 #include "t48.h"
 #include "t56.h"
+#include "t76.h"
 #include "usb.h"
 
-#define TL866A_RESET	  0xFF
-#define TL866IIPLUS_RESET 0x3F
-#define T48_RESET 0x3F
-#define T56_RESET 0x3F
+#define MINIPRO_RESET	  0xFF
+#define XGECU_RESET 0x3F
 
 #define CRC32_POLYNOMIAL  0xEDB88320
 
@@ -198,7 +198,7 @@ static int minipro_get_system_info(minipro_handle_t *handle)
 		handle->speed = 0;
 		break;
 
-	/* T56, T48:
+	/* T48, T56:
 	 * |--------|------|---------------------------------------------|
 	 * | Offset | Size | Data                                        |
 	 * |--------|------|---------------------------------------------|
@@ -215,7 +215,7 @@ static int minipro_get_system_info(minipro_handle_t *handle)
 	 * | 0x38   | 4    | Voltage, ((x * 0xccf6 / 0x27000) / 100.0) V |
 	 * | 0x3c   | 1    | USB speed (0=12Mbsp, 1=480Mbps)             |
 	 * | 0x3d   | 1    | Unused                                      |
-	 * | 0x3e   | 1    | External power supply                       |
+	 * | 0x3e   | 1    | External power supply(T56 only)             |
 	 * |--------|------|---------------------------------------------|
 	 */
 	case MP_T48:
@@ -242,9 +242,10 @@ static int minipro_get_system_info(minipro_handle_t *handle)
 		voltage = load_int(&msg[56], 4, MP_LITTLE_ENDIAN);
 		handle->voltage = (voltage * 0xccf6 / 0x27000) / 100.0f;
 		handle->speed = msg[60];
+		handle->ext_power = msg[62];
 		break;
 
-	/* TODO: T56P:
+	/* T76:
 	 * |--------|------|---------------------------------------------|
 	 * | Offset | Size | Data                                        |
 	 * |--------|------|---------------------------------------------|
@@ -265,6 +266,19 @@ static int minipro_get_system_info(minipro_handle_t *handle)
 	 * | 0x3f   | 1    | Unused                                      |
 	 * |--------|------|---------------------------------------------|
 	 */
+	case MP_T76:
+		handle->status = (msg[4] == 0) ? MP_STATUS_BOOTLOADER :
+						 MP_STATUS_NORMAL;
+		handle->model = "T76";
+		memcpy(handle->mfg_date, msg + 8, 16);
+		memcpy(handle->device_code, msg + 24, 8);
+		memcpy(handle->serial_number, msg + 32, 24);
+		handle->hw = 0;
+		voltage = load_int(&msg[56], 4, MP_LITTLE_ENDIAN);
+		handle->voltage = voltage / 1000.0f;
+		handle->speed = msg[60];
+		handle->ext_power = msg[62];
+		break;
 
 	default:
 		return EXIT_SUCCESS;
@@ -301,6 +315,7 @@ minipro_handle_t *minipro_open(uint8_t verbose)
 	case MP_TL866IIPLUS:
 	case MP_T48:
 	case MP_T56:
+	case MP_T76:
 		switch (handle->status) {
 		case MP_STATUS_NORMAL:
 		case MP_STATUS_BOOTLOADER:
@@ -424,29 +439,59 @@ minipro_handle_t *minipro_open(uint8_t verbose)
 		handle->minipro_firmware_update = t56_firmware_update;
 		handle->minipro_logic_ic_test = t56_logic_ic_test;
 		break;
+	case MP_T76:
+		handle->minipro_begin_transaction = t76_begin_transaction;
+		handle->minipro_end_transaction = t76_end_transaction;
+		handle->minipro_get_chip_id = t76_get_chip_id;
+		handle->minipro_spi_autodetect = t76_spi_autodetect;
+		handle->minipro_read_block = t76_read_block;
+		handle->minipro_write_block = t76_write_block;
+		handle->minipro_protect_off = t76_protect_off;
+		handle->minipro_protect_on = t76_protect_on;
+		handle->minipro_erase = t76_erase;
+		handle->minipro_read_fuses = t76_read_fuses;
+		handle->minipro_write_fuses = t76_write_fuses;
+		handle->minipro_read_calibration = t76_read_calibration;
+		handle->minipro_get_ovc_status = t76_get_ovc_status;
+		handle->minipro_read_jedec_row = t76_read_jedec_row;
+		handle->minipro_write_jedec_row = t76_write_jedec_row;
+		handle->minipro_firmware_update = t76_firmware_update;
+		handle->minipro_pin_test = t76_pin_test;
+		handle->minipro_logic_ic_test = t76_logic_ic_test;
+		break;
 	}
 	return handle;
 }
 
 void minipro_close(minipro_handle_t *handle)
 {
-	if (handle && handle->usb_handle)
+	if (!handle)
+		return;
+
+	if (handle->usb_handle) {
+		/* Reset T76 FPGA at the end of the session */
+		if (handle->version == MP_T76 && handle->bitstream_uploaded) {
+			char *msg = "OK";
+			if (t76_reset_fpga(handle)) {
+				msg = "error!";
+			}
+			fprintf(stderr, "FPGA Reset  %s\n", msg);
+		}
 		usb_close(handle->usb_handle);
-	if (handle && handle->device) {
-		if (handle->device->config) {
+	}
+	if (handle->device) {
+		gal_config_t *cfg = (gal_config_t *)handle->device->config;
+		if (cfg) {
 			if (handle->device->chip_type == MP_PLD &&
-			    ((gal_config_t *)(handle->device->config))->acw_bits)
-				free(((gal_config_t *)(handle->device->config))
-					     ->acw_bits);
-			free(handle->device->config);
+			    cfg->acw_bits)
+				free(cfg->acw_bits);
+			free(cfg);
 		}
 		if (handle->device->vectors)
 			free(handle->device->vectors);
-	}
-	if (handle->device)
 		free(handle->device);
-	if (handle)
-		free(handle);
+	}
+	free(handle);
 }
 
 /* Reset TL866 device */
@@ -461,21 +506,18 @@ int minipro_reset(minipro_handle_t *handle)
 	switch (version) {
 	case MP_TL866A:
 	case MP_TL866CS:
-		msg[0] = TL866A_RESET;
+		msg[0] = MINIPRO_RESET;
 		size = 4;
 		break;
 	case MP_TL866IIPLUS:
-		msg[0] = TL866IIPLUS_RESET;
-		size = 8;
-		break;
 	case MP_T48:
-		msg[0] = T48_RESET;
-		size = 8;
-		break;
 	case MP_T56:
-		msg[0] = T56_RESET;
+	case MP_T76:
+		msg[0] = XGECU_RESET;
 		size = 8;
 		break;
+	default:
+		return EXIT_FAILURE;
 	}
 	if (msg_send(handle->usb_handle, msg, size)) {
 		return EXIT_FAILURE;
@@ -505,6 +547,8 @@ void minipro_print_system_info(minipro_handle_t *handle)
 {
 	uint16_t expected_firmware = 0;
 	char *expected_firmware_str = NULL;
+	char *warning = NULL;
+	uint8_t ext = 0;
 
 	switch (handle->version) {
 	case MP_TL866A:
@@ -519,27 +563,33 @@ void minipro_print_system_info(minipro_handle_t *handle)
 	case MP_T48:
 		expected_firmware = T48_FIRMWARE_VERSION;
 		expected_firmware_str = T48_FIRMWARE_STRING;
+		warning = "Warning: T48 support is not yet complete!";
 		break;
 	case MP_T56:
 		expected_firmware = T56_FIRMWARE_VERSION;
 		expected_firmware_str = T56_FIRMWARE_STRING;
+		warning = "Warning: T56 support is experimental!";
+		ext = 1;
+		break;
+	case MP_T76:
+		expected_firmware = T76_FIRMWARE_VERSION;
+		expected_firmware_str = T76_FIRMWARE_STRING;
+		warning = "Warning: T76 support is experimental!";
+		ext = 1;
 		break;
 	}
 
 	if (handle->status == MP_STATUS_BOOTLOADER) {
-		fprintf(stderr, "Found %s in bootloader mode", handle->model);
+		fprintf(stderr, "Found %s in bootloader mode.\n",
+			handle->model);
 		return;
 	}
 
 	fprintf(stderr, "Found %s %s (%#03x)\n", handle->model,
 		handle->firmware_str, handle->firmware);
 
-	if (handle->version == MP_T48) {
-		fprintf(stderr, "Warning: T48 support is not yet complete!\n");
-	}
-
-	if (handle->version == MP_T56) {
-		fprintf(stderr, "Warning: T56 support is experimental!\n");
+	if (warning != NULL) {
+		fprintf(stderr, "%s\n", warning);
 	}
 
 	if (handle->firmware < expected_firmware) {
@@ -555,8 +605,8 @@ void minipro_print_system_info(minipro_handle_t *handle)
 		fprintf(stderr, "  Found     %s (%#03x)\n",
 			handle->firmware_str, handle->firmware);
 	}
-	fprintf(stderr, "Device code: %s\nSerial code: %s\n", handle->device_code,
-		handle->serial_number);
+	fprintf(stderr, "Device code: %s\nSerial code: %s\n",
+		handle->device_code, handle->serial_number);
 
 	if (*handle->mfg_date)
 		fprintf(stderr, "Manufactured: %s\n", handle->mfg_date);
@@ -574,18 +624,14 @@ void minipro_print_system_info(minipro_handle_t *handle)
 	}
 
 	if (handle->voltage > 0.0f)
-		fprintf(stderr, "Supply voltage: %.2f V\n", handle->voltage);
+		fprintf(stderr, "Supply voltage: %.2f V %s\n", handle->voltage,
+			ext ? (handle->ext_power ? "(External)" : "(USB)") :
+			      "");
 }
 
 int minipro_begin_transaction(minipro_handle_t *handle)
 {
 	assert(handle != NULL);
-
-	/* pack voltages */
-	voltages_t *voltages = &handle->device->voltages;
-	voltages->raw_voltages = (voltages->raw_voltages & 0xffff0000) |
-				 (voltages->vdd << 12) | (voltages->vcc << 8) |
-				 voltages->vpp;
 	if (handle->minipro_begin_transaction) {
 		return handle->minipro_begin_transaction(handle);
 	} else {
@@ -648,23 +694,21 @@ int minipro_get_ovc_status(minipro_handle_t *handle, minipro_status_t *status,
 	return EXIT_FAILURE;
 }
 
-int minipro_erase(minipro_handle_t *handle)
+int minipro_erase(minipro_handle_t *handle, uint8_t num_fuses, uint8_t pld)
 {
 	assert(handle != NULL);
 	if (handle->minipro_erase) {
-		return handle->minipro_erase(handle);
+		return handle->minipro_erase(handle, num_fuses, pld);
 	}
 	fprintf(stderr, "%s: erase not implemented\n", handle->model);
 	return EXIT_FAILURE;
 }
 
-int minipro_read_block(minipro_handle_t *handle, uint8_t type, uint32_t addr,
-		       uint8_t *buffer, size_t len)
+int minipro_read_block(minipro_handle_t *handle, data_set_t *ds)
 {
 	assert(handle != NULL);
 	if (handle->minipro_read_block) {
-		return handle->minipro_read_block(handle, type, addr, buffer,
-						  len);
+		return handle->minipro_read_block(handle, ds);
 	} else {
 		fprintf(stderr, "%s: read_block not implemented\n",
 			handle->model);
@@ -672,13 +716,11 @@ int minipro_read_block(minipro_handle_t *handle, uint8_t type, uint32_t addr,
 	return EXIT_FAILURE;
 }
 
-int minipro_write_block(minipro_handle_t *handle, uint8_t type, uint32_t addr,
-			uint8_t *buffer, size_t len)
+int minipro_write_block(minipro_handle_t *handle, data_set_t *ds)
 {
 	assert(handle != NULL);
 	if (handle->minipro_write_block) {
-		return handle->minipro_write_block(handle, type, addr, buffer,
-						   len);
+		return handle->minipro_write_block(handle, ds);
 	} else {
 		fprintf(stderr, "%s: write_block not implemented\n",
 			handle->model);
@@ -743,13 +785,11 @@ int minipro_write_fuses(minipro_handle_t *handle, uint8_t type, size_t length,
 	return EXIT_FAILURE;
 }
 
-int minipro_write_jedec_row(minipro_handle_t *handle, uint8_t *buffer,
-			    uint8_t row, uint8_t flags, size_t size)
+int minipro_write_jedec_row(minipro_handle_t *handle, jedec_set_t *js)
 {
 	assert(handle != NULL);
 	if (handle->minipro_write_jedec_row) {
-		return handle->minipro_write_jedec_row(handle, buffer, row,
-						       flags, size);
+		return handle->minipro_write_jedec_row(handle, js);
 	} else {
 		fprintf(stderr, "%s: write jedec row not implemented\n",
 			handle->model);
@@ -757,13 +797,11 @@ int minipro_write_jedec_row(minipro_handle_t *handle, uint8_t *buffer,
 	return EXIT_FAILURE;
 }
 
-int minipro_read_jedec_row(minipro_handle_t *handle, uint8_t *buffer,
-			   uint8_t row, uint8_t flags, size_t size)
+int minipro_read_jedec_row(minipro_handle_t *handle, jedec_set_t *js)
 {
 	assert(handle != NULL);
 	if (handle->minipro_read_jedec_row) {
-		return handle->minipro_read_jedec_row(handle, buffer, row,
-						      flags, size);
+		return handle->minipro_read_jedec_row(handle, js);
 	} else {
 		fprintf(stderr, "%s: read jedec row not implemented\n",
 			handle->model);
@@ -826,13 +864,23 @@ int minipro_firmware_update(minipro_handle_t *handle, const char *firmware)
 int minipro_pin_test(minipro_handle_t *handle)
 {
 	assert(handle != NULL);
-	if (handle->minipro_pin_test) {
-		return handle->minipro_pin_test(handle);
-	} else {
+	if (!handle->minipro_pin_test) {
 		fprintf(stderr, "%s: pin test not implemented\n",
 			handle->model);
+		return EXIT_FAILURE;
 	}
-	return EXIT_FAILURE;
+
+	/* Get the chip pin mask for testing */
+	db_data_t db_data = { 0 };
+	db_data.infoic_path = handle->cmdopts->infoic_path;
+	db_data.logicic_path = handle->cmdopts->logicic_path;
+	db_data.index = handle->device->pin_map;
+	pin_map_t *map = get_pin_map(&db_data);
+	if (!map)
+		return EXIT_FAILURE;
+	int ret = handle->minipro_pin_test(handle, map);
+	free(map);
+	return ret;
 }
 
 int minipro_logic_ic_test(minipro_handle_t *handle)

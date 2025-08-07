@@ -26,15 +26,66 @@
 #define MP_TL866_PID	    0xe11c
 #define MP_TL866II_VID	    0xa466
 #define MP_TL866II_PID	    0x0a53
+#define MP_T76_VID	        0xa466
+#define MP_T76_PID	        0x1a86
 #define MP_TL866IIPLUS	    5
 #define MP_T56			    6
 #define MP_T48			    7
+#define MP_T76			    8
 #define MP_USBTIMEOUT	    5000
 #define MP_USB_READ_TIMEOUT 360000
+
+typedef struct usb_id {
+	uint16_t vid;
+	uint16_t pid;
+} usb_id_t;
+
+typedef struct usb_handle {
+	void *handle;
+	usb_id_t usb_id;
+} usb_handle_t;
+
+
+/* Helper function to debug USB communication
+ * Use make CFLAGS+=-DDEBUG_USB to activate this
+ */
+#ifdef DEBUG_USB
+void print_hex(const uint8_t *buffer, int size, uint8_t endpoint)
+{
+	fprintf(stderr,
+		"\x1b[33m%s %d bytes on endpoint 0x%02X \x1b[0m \n",
+		(endpoint & 0x80) ? "Read" : "Write", size, endpoint);
+	for (int i = 0; i < size; i += 16) {
+		for (int j = 0; j < 16; j++) {
+			if (i + j < size) {
+				fprintf(stderr, "\x1b[36m%02X \x1b[0m",
+					buffer[i + j]);
+			} else {
+				fprintf(stderr, "   ");
+			}
+		}
+		fprintf(stderr, "  ");
+		for (int j = 0; j < 16 && i + j < size; j++) {
+			uint8_t c = buffer[i + j];
+			if (c >= 32 && c <= 126) {
+				fprintf(stderr, "\x1b[32m%c\x1b[0m", c);
+			} else {
+				fprintf(stderr, "\x1b[90m.\x1b[0m");
+			}
+		}
+		fprintf(stderr, "\n");
+	}
+	fprintf(stderr, "\n");
+}
+#endif
 
 /* Open usb device */
 void *usb_open(uint8_t verbose)
 {
+	usb_id_t usb_ids[] = { { .vid = MP_TL866_VID, .pid = MP_TL866_PID },
+			       { .vid = MP_TL866II_VID, .pid = MP_TL866II_PID },
+			       { .vid = MP_T76_VID, .pid = MP_T76_PID } };
+
 	int ret = libusb_init(NULL);
 	if (ret < 0) {
 		if (verbose)
@@ -43,21 +94,24 @@ void *usb_open(uint8_t verbose)
 		return NULL;
 	}
 
-	void *usb_handle = libusb_open_device_with_vid_pid(NULL, MP_TL866_VID,
-							   MP_TL866_PID);
-	if (usb_handle == NULL) {
-		/* We didn't match the vid / pid of the "original" TL866.
-		 * So try the new TL866II+ */
-		usb_handle = libusb_open_device_with_vid_pid(
-			NULL, MP_TL866II_VID, MP_TL866II_PID);
+	/* Loop trough each known VID/PID */
+	void *usb_handle = NULL;
+	uint16_t vid;
+	uint16_t pid;
+	for (int i = 0;
+	     i < sizeof(usb_ids) / sizeof(usb_ids[0]) && usb_handle == NULL;
+	     i++) {
+		vid = usb_ids[i].vid;
+		pid = usb_ids[i].pid;
+		usb_handle = libusb_open_device_with_vid_pid(NULL, vid, pid);
+	}
 
-		/* If we don't get that either report error in connecting */
-		if (usb_handle == NULL) {
-			libusb_exit(NULL);
-			if (verbose)
-				fprintf(stderr, "No programmer found.\n");
-			return NULL;
-		}
+	/* If we don't get any connected device report error in connecting */
+	if (usb_handle == NULL) {
+		libusb_exit(NULL);
+		if (verbose)
+			fprintf(stderr, "No programmer found.\n");
+		return NULL;
 	}
 
 	ret = libusb_claim_interface(usb_handle, 0);
@@ -69,21 +123,34 @@ void *usb_open(uint8_t verbose)
 		libusb_exit(NULL);
 		return NULL;
 	}
-	return usb_handle;
+
+	usb_handle_t *handle = calloc(1, sizeof(usb_handle_t));
+	if (!handle) {
+		if (verbose)
+			fprintf(stderr, "Out of memory!\n");
+		return NULL;
+	}
+	handle->handle = usb_handle;
+	handle->usb_id.vid = vid;
+	handle->usb_id.pid = pid;
+	return handle;
 }
 
 /* Close usb device */
 int usb_close(void *usb_handle)
 {
+
 	int ret = EXIT_SUCCESS;
-	ret = libusb_release_interface(usb_handle, 0);
+	void *handle = ((usb_handle_t *)usb_handle)->handle;
+	ret = libusb_release_interface(handle, 0);
 	if (ret != 0 && ret != LIBUSB_ERROR_NO_DEVICE) {
 		fprintf(stderr, "\nIO error: release_interface: %s\n",
 			libusb_error_name(ret));
 		ret = EXIT_FAILURE;
 	}
-	libusb_close(usb_handle);
+	libusb_close(handle);
 	libusb_exit(NULL);
+	free(usb_handle);
 	return ret;
 }
 
@@ -101,6 +168,11 @@ int minipro_get_devices_count(uint8_t version)
 	case MP_T56:
 		PID = MP_TL866II_PID;
 		VID = MP_TL866II_VID;
+		break;
+
+	case MP_T76:
+		PID = MP_T76_PID;
+		VID = MP_T76_VID;
 		break;
 
 	default:
@@ -143,23 +215,30 @@ static void payload_transfer_cb(struct libusb_transfer *transfer)
 	}
 }
 
-static int msg_transfer(void *handle, uint8_t *buffer, size_t size,
+static int msg_transfer(void *usb_handle, uint8_t *buffer, size_t size,
 			uint8_t direction, uint8_t endpoint,
 			int *bytes_transferred, uint32_t timeout)
 {
+	void *handle = ((usb_handle_t *)usb_handle)->handle;
 	int ret = libusb_bulk_transfer(handle, (endpoint | direction), buffer,
 				       size, bytes_transferred, timeout);
+
+#ifdef DEBUG_USB
+	print_hex(buffer, *bytes_transferred, (endpoint | direction));
+#endif
 
 	if (ret != LIBUSB_SUCCESS)
 		fprintf(stderr, "\nIO error: bulk_transfer: %s\n",
 			libusb_error_name(ret));
+
 	return ret;
 }
 
-static int payload_transfer(void *handle, uint8_t direction,
+static int payload_transfer(void *usb_handle, uint8_t direction,
 			    uint8_t *ep2_buffer, size_t ep2_length,
 			    uint8_t *ep3_buffer, size_t ep3_length)
 {
+	void *handle = ((usb_handle_t *)usb_handle)->handle;
 	struct libusb_transfer *ep2_urb;
 	struct libusb_transfer *ep3_urb;
 	int ret;
@@ -223,27 +302,39 @@ static int payload_transfer(void *handle, uint8_t direction,
 		return EXIT_FAILURE;
 	}
 
+#ifdef DEBUG_USB
+	print_hex(ep2_buffer, ep2_urb->actual_length,  (0x02 | direction));
+	print_hex(ep3_buffer, ep3_urb->actual_length,  (0x03 | direction));
+#endif
+
 	libusb_free_transfer(ep2_urb);
 	libusb_free_transfer(ep3_urb);
 	return EXIT_SUCCESS;
 }
 
-int write_payload2(void *handle, uint8_t *buffer, size_t length, size_t limit)
+int write_payload2(void *usb_handle, uint8_t *buffer, size_t length, size_t limit)
 {
 	uint32_t ep2_length;
 	uint32_t ep3_length;
 	int status;
 	int bytes_transferred;
 
+	/* Handle T76 write payload to endpoint 0x05 */
+	if (((usb_handle_t *)usb_handle)->usb_id.pid == MP_T76_PID) {
+		return msg_transfer(usb_handle, buffer, length,
+				    LIBUSB_ENDPOINT_OUT, 0x05,
+				    &bytes_transferred, MP_USBTIMEOUT);
+	}
+
 	/* If the payload length is exactly 64 bytes send it over the
 	 * endpoint2 only */
 	if (!limit || length <= limit) {
-		status = msg_transfer(handle, buffer, length, LIBUSB_ENDPOINT_OUT,
+		status = msg_transfer(usb_handle, buffer, length, LIBUSB_ENDPOINT_OUT,
 				    0x02, &bytes_transferred, MP_USBTIMEOUT);
 		if (bytes_transferred == length)
 			return status;
 
-		fprintf(stderr, "%s: short write %d/%zu\n", __func__, bytes_transferred, length);
+		fprintf(stderr, "%s: short write %d/%lu\n", __func__, bytes_transferred, length);
 		return EXIT_FAILURE;
 	}
 
@@ -263,22 +354,32 @@ int write_payload2(void *handle, uint8_t *buffer, size_t length, size_t limit)
 		ep2_length = ep3_length;
 	}
 
-	return payload_transfer(handle, LIBUSB_ENDPOINT_OUT, buffer, ep2_length,
+	return payload_transfer(usb_handle, LIBUSB_ENDPOINT_OUT, buffer, ep2_length,
 				buffer + ep2_length, ep3_length);
 }
 
-int read_payload2(void *handle, uint8_t *buffer, size_t length, size_t limit)
+int read_payload2(void *usb_handle, uint8_t *buffer, size_t length,
+		  size_t limit)
 {
+	int i, bytes_transferred;
+
+	/* Handle T76 read payload from endpoint 0x82 */
+	if (((usb_handle_t *)usb_handle)->usb_id.pid == MP_T76_PID) {
+		return msg_transfer(usb_handle, buffer, length,
+				    LIBUSB_ENDPOINT_IN, 0x02,
+				    &bytes_transferred, MP_USBTIMEOUT);
+	}
+
 	/* If the payload length is less than 64 bytes increase the
 	 * buffer to 64 bytes and read it over the endpoint2 only.
 	 * Submitting a buffer less than 64 bytes will cause an libusb
 	 * overflow.
 	 */
-	int i, bytes_transferred;
 	if (length < 64) {
 		uint8_t data[64];
-		if (msg_transfer(handle, data, sizeof(data), LIBUSB_ENDPOINT_IN,
-				 0x02, &bytes_transferred, MP_USBTIMEOUT))
+		if (msg_transfer(usb_handle, data, sizeof(data),
+				 LIBUSB_ENDPOINT_IN, 0x02, &bytes_transferred,
+				 MP_USBTIMEOUT))
 			return EXIT_FAILURE;
 		memcpy(buffer, data, length);
 		return EXIT_SUCCESS;
@@ -286,8 +387,9 @@ int read_payload2(void *handle, uint8_t *buffer, size_t length, size_t limit)
 
 	/* If the payload length < limit bytes read it over the endpoint2 only */
 	if (length == 64 || !limit || length < limit)
-		return msg_transfer(handle, buffer, length, LIBUSB_ENDPOINT_IN,
-				    0x02, &bytes_transferred, MP_USBTIMEOUT);
+		return msg_transfer(usb_handle, buffer, length,
+				    LIBUSB_ENDPOINT_IN, 0x02,
+				    &bytes_transferred, MP_USBTIMEOUT);
 
 	/* More than limit bytes */
 	uint8_t *data = malloc(length);
@@ -297,7 +399,7 @@ int read_payload2(void *handle, uint8_t *buffer, size_t length, size_t limit)
 	}
 
 	/* Async read of endpoints 2 and 3 */
-	if (payload_transfer(handle, LIBUSB_ENDPOINT_IN, data, length / 2,
+	if (payload_transfer(usb_handle, LIBUSB_ENDPOINT_IN, data, length / 2,
 			     data + length / 2, length / 2)) {
 		free(data);
 		return EXIT_FAILURE;
@@ -318,10 +420,10 @@ int read_payload2(void *handle, uint8_t *buffer, size_t length, size_t limit)
 	return EXIT_SUCCESS;
 }
 
-int msg_send(void *handle, uint8_t *buffer, size_t size)
+int msg_send(void *usb_handle, uint8_t *buffer, size_t size)
 {
 	int bytes_transferred, ret;
-	ret = msg_transfer(handle, buffer, size, LIBUSB_ENDPOINT_OUT, 0x01,
+	ret = msg_transfer(usb_handle, buffer, size, LIBUSB_ENDPOINT_OUT, 0x01,
 			   &bytes_transferred, MP_USBTIMEOUT);
 	if (bytes_transferred != (int)size) {
 		fprintf(stderr,
@@ -332,9 +434,9 @@ int msg_send(void *handle, uint8_t *buffer, size_t size)
 	return ret;
 }
 
-int msg_recv(void *handle, uint8_t *buffer, size_t size)
+int msg_recv(void *usb_handle, uint8_t *buffer, size_t size)
 {
 	int bytes_transferred;
-	return msg_transfer(handle, buffer, size, LIBUSB_ENDPOINT_IN, 0x01,
+	return msg_transfer(usb_handle, buffer, size, LIBUSB_ENDPOINT_IN, 0x01,
 			    &bytes_transferred, MP_USB_READ_TIMEOUT);
 }

@@ -97,42 +97,49 @@ static int t56_send_bitstream(minipro_handle_t *handle)
 	*/
 	device_t *device = handle->device;
 	if (device->chip_type == MP_LOGIC) {
-		fprintf(stderr, "Using LOGIC algorithm..\n");
+		fprintf(stderr, "Using T56 LOGIC algorithm..\n");
 		device->protocol_id = IC2_ALG_NONE;
 		for (int i = 0; i < 2; i++) {
 			/* Choose 'TTL1' or 'TTL2' bitstream */
-			handle->device->variant = i ? UTIL_ALG_TTL2 << 8 :
-						      UTIL_ALG_TTL1 << 8;
-			if (get_algorithm(device, handle->cmdopts->algo_path,
+			device->variant = i ? T56_UTIL_ALG_TTL2 << 8 :
+					      T56_UTIL_ALG_TTL1 << 8;
+			if (get_algorithm(device, MP_T56,
+					  handle->cmdopts->algo_path,
 					  handle->cmdopts->icsp,
-					  handle->cmdopts->vopt, 8))
+					  handle->cmdopts->vopt))
 				return EXIT_FAILURE;
 
 			/* Use multipart bitstream sending protocol */
-			device->algorithm.bitstream[0] = T56_WRITE_BITSTREAM2;
-			device->algorithm.bitstream[1] = i ? 0 : 1;
-			format_int(&device->algorithm.bitstream[4],
-				   handle->device->algorithm.length, 4,
-				   MP_LITTLE_ENDIAN);
-
-			if (msg_send(handle->usb_handle,
-				     device->algorithm.bitstream,
-				     device->algorithm.length + 8)) {
+			uint8_t *buffer = malloc(device->algorithm.length + 8);
+			if (!buffer) {
+				fprintf(stderr, "Out of memory!\n");
 				free(device->algorithm.bitstream);
 				return EXIT_FAILURE;
 			}
-			free(handle->device->algorithm.bitstream);
+			memcpy(buffer + 8, device->algorithm.bitstream,
+			       device->algorithm.length);
+			free(device->algorithm.bitstream);
+			buffer[0] = T56_WRITE_BITSTREAM2;
+			buffer[1] = i ? 0 : 1;
+			format_int(&buffer[4], device->algorithm.length, 4,
+				   MP_LITTLE_ENDIAN);
+
+			if (msg_send(handle->usb_handle, buffer,
+				     device->algorithm.length + 8)) {
+				free(buffer);
+				return EXIT_FAILURE;
+			}
+			free(buffer);
 		}
 		return EXIT_SUCCESS;
 	}
 
 	/* Normal devices algorithm handling */
-	if (get_algorithm(device, handle->cmdopts->algo_path,
-			  handle->cmdopts->icsp, handle->cmdopts->vopt, 0))
+	if (get_algorithm(device, MP_T56, handle->cmdopts->algo_path,
+			  handle->cmdopts->icsp, handle->cmdopts->vopt))
 		return EXIT_FAILURE;
 
-	fprintf(stderr, "Using %s algorithm..\n",
-		device->algorithm.name);
+	fprintf(stderr, "Using T56 %s algorithm..\n", device->algorithm.name);
 
 	/* Send the bitstream algorithm to the T56 */
 	algorithm_t *algorithm = &device->algorithm;
@@ -200,6 +207,11 @@ int t56_begin_transaction(minipro_handle_t *handle)
 		if (device->voltages.raw_voltages & 0x80000000)
 			msg[22] = (device->voltages.raw_voltages >> 16) & 0x0f;
 
+		/* SPI clock  if supported or zero */
+		if (device->flags.can_adjust_clock) {
+			msg[28] = device->spi_clock;
+		}
+
 		format_int(&(msg[40]),
 			   handle->device->package_details.packed_package, 4,
 			   MP_LITTLE_ENDIAN);
@@ -235,70 +247,65 @@ int t56_end_transaction(minipro_handle_t *handle)
 	memset(msg, 0x00, sizeof(msg));
 	msg[0] = T56_END_TRANS;
 	return msg_send(handle->usb_handle, msg, sizeof(msg));
-	return EXIT_SUCCESS;
 }
 
-int t56_read_block(minipro_handle_t *handle, uint8_t type,
-			   uint32_t addr, uint8_t *buf, size_t len)
+int t56_read_block(minipro_handle_t *handle, data_set_t *ds)
 {
 	if (handle->device->flags.custom_protocol) {
-		return bb_read_block(handle, type, addr, buf, len);
+		return bb_read_block(handle, ds->type, ds->address, ds->data,
+				     ds->size);
 	}
-	uint8_t msg[64];
 
-	if (type == MP_CODE) {
-		type = T56_READ_CODE;
-	} else if (type == MP_DATA) {
-		type = T56_READ_DATA;
-	} else if (type == MP_USER) {
-		type = T56_READ_USER_DATA;
+	uint8_t msg[64] = { 0 };
+	if (ds->type == MP_CODE) {
+		msg[0] = T56_READ_CODE;
+	} else if (ds->type == MP_DATA) {
+		msg[0] = T56_READ_DATA;
+	} else if (ds->type == MP_USER) {
+		msg[0] = T56_READ_USER_DATA;
 	} else {
-		fprintf(stderr, "Unknown type for read_block (%d)\n", type);
+		fprintf(stderr, "Unknown type for read_block (%d)\n", ds->type);
 		return EXIT_FAILURE;
 	}
 
-	memset(msg, 0x00, sizeof(msg));
-	msg[0] = type;
-	/* msg[1] = 1; */
-	format_int(&(msg[2]), len, 2, MP_LITTLE_ENDIAN);
-	format_int(&(msg[4]), addr, 4, MP_LITTLE_ENDIAN);
+	format_int(&(msg[2]), ds->size, 2, MP_LITTLE_ENDIAN);
+	format_int(&(msg[4]), ds->address, 4, MP_LITTLE_ENDIAN);
 	if (msg_send(handle->usb_handle, msg, 8))
 		return EXIT_FAILURE;
 
 	/* T56 off by one firmware bug bug
 	 * Pass a larger buffer, otherwise libusb will overflow.
 	 */
-	return msg_recv(handle->usb_handle, buf, len + 16);
+	return msg_recv(handle->usb_handle, ds->data, ds->size + 16);
 }
 
-int t56_write_block(minipro_handle_t *handle, uint8_t type,
-			    uint32_t addr, uint8_t *buf, size_t len)
+int t56_write_block(minipro_handle_t *handle, data_set_t *ds)
 {
 	if (handle->device->flags.custom_protocol) {
-		return bb_write_block(handle, type, addr, buf, len);
+		return bb_write_block(handle, ds->type, ds->address, ds->data,
+				      ds->size);
 	}
-	uint8_t msg[64];
 
-	if (type == MP_CODE) {
-		type = T56_WRITE_CODE;
-	} else if (type == MP_DATA) {
-		type = T56_WRITE_DATA;
-	} else if (type == MP_USER) {
-		type = T56_WRITE_USER_DATA;
+	uint8_t msg[64] = { 0 };
+	if (ds->type == MP_CODE) {
+		msg[0] = T56_WRITE_CODE;
+	} else if (ds->type == MP_DATA) {
+		msg[0] = T56_WRITE_DATA;
+	} else if (ds->type == MP_USER) {
+		msg[0] = T56_WRITE_USER_DATA;
 	} else {
-		fprintf(stderr, "Unknown type for write_block (%d)\n", type);
+		fprintf(stderr, "Unknown type for write_block (%d)\n",
+			ds->type);
 		return EXIT_FAILURE;
 	}
 
-	memset(msg, 0x00, sizeof(msg));
-	msg[0] = type;
-	format_int(&(msg[2]), len, 2, MP_LITTLE_ENDIAN);
-	format_int(&(msg[4]), addr, 4, MP_LITTLE_ENDIAN);
+	format_int(&(msg[2]), ds->size, 2, MP_LITTLE_ENDIAN);
+	format_int(&(msg[4]), ds->address, 4, MP_LITTLE_ENDIAN);
 	if (msg_send(handle->usb_handle, msg, 8))
 		return EXIT_FAILURE;
 
-	if (msg_send(handle->usb_handle, buf,
-				handle->device->write_buffer_size))
+	if (msg_send(handle->usb_handle, ds->data,
+		     handle->device->write_buffer_size))
 		return EXIT_FAILURE;
 	return EXIT_SUCCESS;
 }
@@ -422,8 +429,7 @@ int t56_spi_autodetect(minipro_handle_t *handle, uint8_t type,
 	/* Create a device structure to search for required
 	 * spi autodetection protocol
 	 */
-	device_t device;
-	memset(&device, 0x00, sizeof(device_t));
+	device_t device = {0};
 
 	/* We need the protocol_id and high byte of the variant field to be set */
 	device.protocol_id = SPI_PROTOCOL;
@@ -474,7 +480,7 @@ int t56_protect_on(minipro_handle_t *handle)
 	return msg_send(handle->usb_handle, msg, sizeof(msg));
 }
 
-int t56_erase(minipro_handle_t *handle)
+int t56_erase(minipro_handle_t *handle, uint8_t num_fuses, uint8_t pld)
 {
 	if (handle->device->flags.custom_protocol) {
 		return bb_erase(handle);
@@ -482,12 +488,8 @@ int t56_erase(minipro_handle_t *handle)
 	uint8_t msg[64];
 	memset(msg, 0, sizeof(msg));
 	msg[0] = T56_ERASE;
-
-	fuse_decl_t *fuses = (fuse_decl_t *)handle->device->config;
-	if (!fuses || fuses->num_fuses)
-		msg[2] = 1;
-	else
-		msg[2] = (fuses->num_fuses > 4) ? 1 : fuses->num_fuses;
+	msg[2] = num_fuses;
+	msg[4] = pld;
 
 	if (msg_send(handle->usb_handle, msg, 15))
 		return EXIT_FAILURE;
@@ -516,41 +518,41 @@ int t56_get_ovc_status(minipro_handle_t *handle,
 	return EXIT_SUCCESS;
 }
 
-int t56_write_jedec_row(minipro_handle_t *handle, uint8_t *buffer,
-				uint8_t row, uint8_t flags, size_t size)
+int t56_write_jedec_row(minipro_handle_t *handle, jedec_set_t *js)
 {
 	if (handle->device->flags.custom_protocol) {
-		return bb_write_jedec_row(handle, buffer, row, flags, size);
+		return bb_write_jedec_row(handle, js->data, js->row, js->flags,
+					  js->size);
 	}
 	uint8_t msg[64];
 	memset(msg, 0, sizeof(msg));
 	msg[0] = T56_WRITE_JEDEC;
 	msg[1] = handle->device->protocol_id;
-	msg[2] = size;
-	msg[4] = row;
-	msg[5] = flags;
-	memcpy(&msg[8], buffer, (size + 7) / 8);
+	msg[2] = js->size;
+	msg[4] = js->row;
+	msg[5] = js->flags;
+	memcpy(&msg[8], js->data, (js->size + 7) / 8);
 	return msg_send(handle->usb_handle, msg, 64);
 }
 
-int t56_read_jedec_row(minipro_handle_t *handle, uint8_t *buffer,
-			       uint8_t row, uint8_t flags, size_t size)
+int t56_read_jedec_row(minipro_handle_t *handle, jedec_set_t *js)
 {
 	if (handle->device->flags.custom_protocol) {
-		return bb_read_jedec_row(handle, buffer, row, flags, size);
+		return bb_read_jedec_row(handle, js->data, js->row, js->flags,
+					 js->size);
 	}
 	uint8_t msg[32];
 	memset(msg, 0, sizeof(msg));
 	msg[0] = T56_READ_JEDEC;
 	msg[1] = handle->device->protocol_id;
-	msg[2] = size;
-	msg[4] = row;
-	msg[5] = flags;
+	msg[2] = js->size;
+	msg[4] = js->row;
+	msg[5] = js->flags;
 	if (msg_send(handle->usb_handle, msg, 8))
 		return EXIT_FAILURE;
 	if (msg_recv(handle->usb_handle, msg, 32))
 		return EXIT_FAILURE;
-	memcpy(buffer, msg, (size + 7) / 8);
+	memcpy(js->data, msg, (js->size + 7) / 8);
 	return EXIT_SUCCESS;
 }
 

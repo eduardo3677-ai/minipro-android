@@ -26,7 +26,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 #define BUFFER_SIZE 102400U
 
-static size_t readblock(FILE *f, char *s, size_t w)
+static size_t readblock(FILE *f, uint8_t *s, size_t w)
 {
 	fpos_t fp;
 	if (fgetpos(f, &fp), 1 == fread(s, w, 1, f)) {
@@ -36,7 +36,7 @@ static size_t readblock(FILE *f, char *s, size_t w)
 	return fread(s, 1, w, f);
 }
 
-static const char *memchrignore(const char *y, size_t w)
+static const uint8_t *memchrignore(const uint8_t *y, size_t w)
 {
 	/* for <![CDATA...]...> stuff */
 	int in = 0;
@@ -54,10 +54,10 @@ static const char *memchrignore(const char *y, size_t w)
 	return 0;
 }
 
-static int nextpair(const char **value, size_t *valuelen,
-		    const char **tag, size_t *taglen, MemMan *mm, void *f)
+static int nextpair(const uint8_t **value, size_t *valuelen,
+		    const uint8_t **tag, size_t *taglen, MemMan *mm, void *f)
 {
-	const char *s;
+	const uint8_t *s;
 	size_t start = mm->i;
 
 	while (!(s = memchr(mm->b + mm->i, '<', mm->g))) {
@@ -82,7 +82,7 @@ static int nextpair(const char **value, size_t *valuelen,
 			*value = mm->b + start;
 			*valuelen = mm->i;
 			*taglen = 0;
-			*tag = "";
+			*tag = (uint8_t *)"";
 			return ERREND;
 		}
 	}
@@ -131,7 +131,7 @@ static int nextpair(const char **value, size_t *valuelen,
 
 int parse(Parser *p)
 {
-	const char *content, *tag = NULL;
+	const uint8_t *content, *tag = NULL;
 	size_t contentlen = 0, taglen = 0;
 	int r, new = 1;
 	while ((r = nextpair(&content, &contentlen, &tag, &taglen, &p->mm,

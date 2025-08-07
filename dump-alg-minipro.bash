@@ -23,11 +23,16 @@
 
 XGPRO_RAR=xgproV1278_Setup.rar
 XGPRO_RAR2=XgproV1278_Setup.exe
+XGPRO_T76_RAR=xgpro_T76_V1291.rar
+XGPRO_T76_RAR2=Xgpro_T76_V1291.exe
 XGPRO_URL=https://github.com/Kreeblah/XGecu_Software/raw/refs/heads/master/Xgpro/12
 XGPRO_SHA256=cf5dd2771aa3b5af46e09c2eabc05bdb56362dd2719c348e287fa91d93b8eec9
+#XGPRO_T76_SHA256=483f7f8b7a5160865ef43d81b59117f579edbb0742b88eee3c4ba3718ae961a7
+XGPRO_T76_SHA256=203ffaf47c4c016acde67daa80db04fffb89fdebe0aa812f92e843c0b4231437
 
 WORKDIR=`pwd`
 XGPRO_ALG="algorithm"
+XGPRO_T76_ALG="algoT76"
 ALG_FILENAME="algorithm.xml"
 
 FIRMWARE_NAMES=("updateII.dat" "UpdateT48.dat" "updateT56.dat")
@@ -35,18 +40,25 @@ FIRMWARE_TYPE=("TL866II+" "T48" "T56")
 FIRMWARE_VERSIONS=("04.2.105" "01.1.32" "01.1.73")
 FIRMWARE_COUNT=3
 
-ALG_OFFSET=545		# 0x221
+T76_FIRMWARE_NAME="UpdateT76.Dat"
+T76_FIRMWARE_TYPE="T76"
+T76_FIRMWARE_VERSION="00.1.08"
+
+
+
+T56_ALG_OFFSET=545		# 0x221
+T76_ALG_OFFSET=4097		# 0x1001
 
 TAR="bsdtar"
 
 usage() {
 	echo "usage: $0 [ <path> ]" && grep " .)\ #" $0;
 	echo
-	echo "This script downloads Xgecu software RAR file to extract firmware and T56"
-	echo "algorithms.  By default, this script will process the *.alg files in"
+	echo "This script downloads Xgecu software RAR file to extract firmware, T56 and"
+	echo "T76 algorithms.  By default, this script will process the *.alg files in"
 	echo "$XGPRO_RAR and put the resulting $ALG_FILENAME file in the current"
-	echo "directory along with the latest firmware images for the TL866II+, T48, and"
-	echo "T56 programmers."
+	echo "directory along with the latest firmware images for the TL866II+, T48, T56"
+	echo "and T76 programmers."
 	echo
 	echo "If a path is supplied (for example: /usr/local/share/minipro/), this script"
 	echo "will attempt to install $ALG_FILENAME there.  This is intended for use by the"
@@ -67,7 +79,7 @@ if [ $1 ] ; then
 fi
 
 echo "Starting the Xgecu downloader."
-echo "** Where do I put the T56 algorithms ($ALG_FILENAME) file?"
+echo "** Where do I put the T56/T76 algorithms ($ALG_FILENAME) file?"
 
 if [ $1 ]; then
 	INSTALL_DIR=$1
@@ -186,6 +198,25 @@ if [ $RETVAL -ne 0 ] ; then
 	exit 2
 fi
 
+if [ ! -f "$WORKDIR/$XGPRO_T76_RAR" ] ; then
+	echo "** Downloading $XGPRO_T76_RAR."
+#	echo "   doing $GETURL $WORKDIR/$XGPRO_T76_RAR $XGPRO_URL/$XGPRO_T76_RAR"
+	http_code="$($GETURL $WORKDIR/$XGPRO_T76_RAR $XGPRO_URL/$XGPRO_T76_RAR)"
+	RETVAL="$?"
+
+	if [ ! -s $WORKDIR/$XGPRO_T76_RAR ] ; then
+		rm -f $WORKDIR/$XGPRO_T6_RAR
+	fi
+else
+	echo "** $XGPRO_T76_RAR already in $WORKDIR."
+	RETVAL=0
+fi
+
+if [ $RETVAL -ne 0 ] ; then
+	echo "** Error: Unable to download $XGPRO_T76_RAR."
+	exit 2
+fi
+
 echo "** Checking $XGPRO_RAR."
 SHA256_CHECK=`sha256sum $XGPRO_RAR | cut -d" " -f1`
 if [ $XGPRO_SHA256 != $SHA256_CHECK ] ; then
@@ -200,6 +231,21 @@ echo "** Extracting."
 $TAR -x --to-stdout -f $WORKDIR/$XGPRO_RAR \
 	| $TAR -x -f -  ${FIRMWARE_NAMES[*]} $XGPRO_ALG/*.alg
 
+echo "** Checking $XGPRO_T76_RAR."
+SHA256_T76_CHECK=`sha256sum $XGPRO_T76_RAR | cut -d" " -f1`
+if [ $XGPRO_T76_SHA256 != $SHA256_T76_CHECK ] ; then
+	echo "** Error: SHA256 checksum for $XGPRO_T76_RAR is wrong."
+	echo "    Should be $XGPRO_T76_SHA256"
+	echo "    But I got $SHA256_T76_CHECK"
+	exit 3
+fi
+echo "** SHA256 checksum is good."
+
+echo "** Extracting."
+$TAR -x --to-stdout -f $WORKDIR/$XGPRO_T76_RAR \
+	| $TAR -x -f -  $T76_FIRMWARE_NAME $XGPRO_T76_ALG/*.alg
+
+
 # Rename firmware files to reflect their versions.
 #
 NAME_INDEX=0
@@ -209,17 +255,20 @@ while [ $NAME_INDEX -lt $FIRMWARE_COUNT ] ; do
 	mv ${FIRMWARE_NAMES[$NAME_INDEX]} $NEWNAME
 	NAME_INDEX=$((NAME_INDEX+1))
 done
-echo "    $XGPRO_ALG/"
 
+NEWNAME="firmware-${T76_FIRMWARE_TYPE}-${T76_FIRMWARE_VERSION}.dat"
+echo "    $T76_FIRMWARE_NAME --> $NEWNAME"
+mv $T76_FIRMWARE_NAME $NEWNAME
 
 # Extracting algorithm data and building algorithm.xml.
 #
-echo "** Processing T56 algorithm files to create $ALG_FILENAME."
+echo "** Processing T56 and T76 algorithm files to create $ALG_FILENAME."
 echo '<root>' > $ALG_FILENAME
 echo '<database type="ALGORITHMS">' >> $ALG_FILENAME
 echo '<algorithms_T56>' >> $ALG_FILENAME
 TICK_COUNT=0
 TICK_MAX=75
+echo "    $XGPRO_ALG/"
 for file in  $XGPRO_ALG/*.alg  ; do
 	if [ $TICK_COUNT -le $TICK_MAX ] ; then
 		TICK_COUNT=$((TICK_COUNT+1))
@@ -229,18 +278,41 @@ for file in  $XGPRO_ALG/*.alg  ; do
 		echo "."
 	fi
 	read -d "" desc < $file
-	bitstream=$(tail -c +$ALG_OFFSET $file | gzip --best | base64 -w 0)
+	bitstream=$(tail -c +$T56_ALG_OFFSET $file | gzip --best | base64 -w 0)
 	file=$(basename -- "$file")
 	echo "<algorithm name=\"${file%.*}\"" >> $ALG_FILENAME
 	echo "description=\"${desc}\"" >> $ALG_FILENAME
 	echo "bitstream=\"${bitstream}\"/>" >> $ALG_FILENAME
 done
+
+echo
+echo
+echo "    $XGPRO_T76_ALG/"
 echo '</algorithms_T56>' >> $ALG_FILENAME
+echo '<algorithms_T76>' >> $ALG_FILENAME
+TICK_COUNT=0
+for file in  $XGPRO_T76_ALG/*.alg  ; do
+	if [ $TICK_COUNT -le $TICK_MAX ] ; then
+		TICK_COUNT=$((TICK_COUNT+1))
+		echo -n "."
+	else
+		TICK_COUNT=0
+		echo "."
+	fi
+    desc=$(tail -c +17 $file | head -c 4080 | strings)
+	bitstream=$((tail -c +5 $file | head -c 8 && \
+    tail -c +$T76_ALG_OFFSET $file) | gzip | base64 -w 0)
+    file="${file##*/}"; file="${file/T7_/}"
+	echo "<algorithm name=\"${file%.*}\"" >> $ALG_FILENAME
+	echo "description=\"${desc}\"" >> $ALG_FILENAME
+	echo "bitstream=\"${bitstream}\"/>" >> $ALG_FILENAME
+done
+echo '</algorithms_T76>' >> $ALG_FILENAME
 echo '</database>' >> $ALG_FILENAME
 echo '</root>' >> $ALG_FILENAME
 
 rm -rf $XGPRO_ALG/
-
+rm -rf $XGPRO_T76_ALG/ 
 echo
 
 if [ $INSTALL_DIR != $WORKDIR ] ; then

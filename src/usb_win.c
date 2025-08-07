@@ -29,24 +29,28 @@
 #define USB_ENDPOINT_OUT   0x00
 #define USB_ENDPOINT_IN	   0x80
 #define MP_TL866IIPLUS	   5
-#define MP_T56					   6
-#define MP_T48					   7
+#define MP_T56		   6
+#define MP_T48		   7
+#define MP_T76		   8
 #define MP_TL866A	   2
 
-#define TL866A_GUID                                                    \
-	{                                                              \
-		0x85980D83, 0x32B9, 0x4BA1,                            \
-		{                                                      \
-			0x8F, 0xDF, 0x12, 0xA7, 0x11, 0xB9, 0x9C, 0xA2 \
-		}                                                      \
-	}
-#define TL866IIPLUS_GUID                                               \
-	{                                                              \
-		0xE7E8BA13, 0x2A81, 0x446E,                            \
-		{                                                      \
-			0xA1, 0x1E, 0x72, 0x39, 0x8F, 0xBD, 0xA8, 0x2F \
-		}                                                      \
-	}
+#define TL866A_GUID   \
+	{ 0x85980D83, \
+	  0x32B9,     \
+	  0x4BA1,     \
+	  { 0x8F, 0xDF, 0x12, 0xA7, 0x11, 0xB9, 0x9C, 0xA2 } }
+
+#define TL866IIPLUS_GUID \
+	{ 0xE7E8BA13,    \
+	  0x2A81,        \
+	  0x446E,        \
+	  { 0xA1, 0x1E, 0x72, 0x39, 0x8F, 0xBD, 0xA8, 0x2F } }
+
+#define T76_GUID      \
+	{ 0x015DE341, \
+	  0x91CC,     \
+	  0x8286,     \
+	  { 0x39, 0x64, 0x1A, 0x00, 0x6B, 0xC1, 0xF0, 0x0F } }
 
 /* Internaly used functions prototypes */
 static int search_devices(uint8_t, char **);
@@ -59,6 +63,7 @@ static int payload_transfer(void *, uint8_t, uint8_t *, size_t, uint8_t *,
 typedef struct usb_handle {
 	HANDLE DeviceHandle;
 	WINUSB_INTERFACE_HANDLE InterfaceHandle;
+	int type;
 } usb_handle_t;
 
 /* Open usb device */
@@ -91,6 +96,7 @@ void *usb_open(uint8_t verbose)
 			free(handle);
 			return NULL;
 		}
+		handle->type = MP_TL866A;
 		return handle;
 	}
 
@@ -118,9 +124,40 @@ void *usb_open(uint8_t verbose)
 					     AUTO_FLUSH, 1, &value);
 			WinUsb_SetPipePolicy(handle->InterfaceHandle, 0x83,
 					     AUTO_FLUSH, 1, &value);
+			handle->type = MP_TL866IIPLUS;
 			return handle;
 		}
 	}
+
+	/* Last search for T76 */
+	count = search_devices(MP_T76, &device_path);
+	if (count) {
+		handle->DeviceHandle =
+			CreateFileA(device_path, GENERIC_READ | GENERIC_WRITE,
+				    FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+				    OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
+		free(device_path);
+		if (handle->DeviceHandle == INVALID_HANDLE_VALUE) {
+			if (verbose)
+				fprintf(stderr, "No programmer found.\n");
+			free(handle);
+			return NULL;
+		}
+
+		if (WinUsb_Initialize(handle->DeviceHandle,
+				      &handle->InterfaceHandle)) {
+			uint8_t value = 1;
+			WinUsb_SetPipePolicy(handle->InterfaceHandle, 0x81,
+					     AUTO_FLUSH, 1, &value);
+			WinUsb_SetPipePolicy(handle->InterfaceHandle, 0x82,
+					     AUTO_FLUSH, 1, &value);
+			WinUsb_SetPipePolicy(handle->InterfaceHandle, 0x83,
+					     AUTO_FLUSH, 1, &value);
+			handle->type = MP_T76;
+			return handle;
+		}
+	}
+
 
 	if (verbose)
 		fprintf(stderr, "No programmer found.\n");
@@ -162,6 +199,12 @@ int write_payload2(void *handle, uint8_t *buffer, size_t length, size_t limit)
 	uint32_t ep2_length;
 	uint32_t ep3_length;
 
+	/* Handle T76 write payload to endpoint 0x05 */
+	if (((usb_handle_t *)handle)->type == MP_T76) {
+		return usb_write(handle, buffer, length,
+				 USB_ENDPOINT_OUT | 0x05);
+	}
+
 	/* If the payload length is exactly 64 bytes,
 	 * send it over the endpoint2 only */
 	if (!limit || length <= limit)
@@ -190,7 +233,13 @@ int write_payload2(void *handle, uint8_t *buffer, size_t length, size_t limit)
 /* Read payload asynchronously */
 int read_payload2(void *handle, uint8_t *buffer, size_t length, size_t limit)
 {
-  /*
+	/* Handle T76 read payload from endpoint 0x82 */
+	if (((usb_handle_t *)handle)->type == MP_T76) {
+		return usb_read(handle, buffer, length,
+				    USB_ENDPOINT_IN | 0x02);
+	}
+
+	/*
    * If the payload length is less than 64 bytes increase the buffer to 64
    * bytes and  read it over the endpoint2 only. Submitting a buffer less than
    * 64 bytes will cause an libusb overflow.
@@ -237,7 +286,6 @@ int read_payload2(void *handle, uint8_t *buffer, size_t length, size_t limit)
 	free(data);
 	return EXIT_SUCCESS;
 }
-
 
 /************************************
  * Kitchen functions
@@ -389,6 +437,9 @@ static int search_devices(uint8_t version, char **device_path)
 	case MP_T48:
 	case MP_T56:
 		guid = (GUID)TL866IIPLUS_GUID;
+		break;
+	case MP_T76:
+		guid = (GUID)T76_GUID;
 		break;
 		
 	default:

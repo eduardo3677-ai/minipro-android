@@ -26,6 +26,7 @@
 #define MP_TL866IIPLUS			   5
 #define MP_T56				   6
 #define MP_T48				   7
+#define MP_T76				   8
 #define MP_STATUS_NORMAL		   1
 #define MP_STATUS_BOOTLOADER		   2
 
@@ -71,6 +72,10 @@
 #define MP_NAND				   0x06
 #define MP_EMMC				   0x07
 #define MP_VGA				   0x08
+
+#define MP_ORG_BYTES 0x00
+#define MP_ORG_WORDS 0x01
+#define MP_ORG_BITS  0x02
 
 /* voltage
  * for ATF20V10C and ATF16V8C variants
@@ -118,10 +123,49 @@ enum logic {
 	LOGIC_V
 };
 
+enum parameter_type {
+	VPP_VOLTAGE,
+	VCC_VOLTAGE,
+	LOGIC_VOLTAGE,
+	VPP_BB_VOLTAGE,
+	VCC_BB_VOLTAGE,
+	SPI_CLOCK
+};
+
+typedef struct pin_map {
+	size_t gnd_count;
+	size_t mask_count;
+	uint16_t gnd_table[16];
+	uint16_t mask[40];
+} pin_map_t;
+
+typedef struct parameters {
+	const char *name;
+	const uint8_t value;
+} parameters_t;
+
+typedef struct data_set {
+	uint8_t *data;
+	size_t size;
+	uint32_t address;
+	uint32_t block_count;
+	uint8_t init;
+	uint8_t type;
+} data_set_t;
+
+typedef struct jedec_set {
+	uint8_t *data;
+	size_t size;
+	uint8_t row;
+	uint8_t flags;
+	uint8_t type;
+} jedec_set_t;
+
 /* Helper macros */
 #define PIN_COUNT(x)	     (((x)&PIN_COUNT_MASK) >> 24)
 
 #define NAME_LEN	     40
+#define ALGO_NAME_LEN    16
 
 #define MP_PIN_DIRECTION_OUT 0x00
 #define MP_PIN_DIRECTION_IN  0x01
@@ -131,7 +175,6 @@ typedef struct flags {
 	uint8_t can_erase;
 	uint8_t has_chip_id;
 	uint8_t has_data_offset;
-	uint8_t has_word;
 	uint8_t off_protect_before;
 	uint8_t protect_after;
 	uint8_t lock_bit_write_only;
@@ -141,6 +184,8 @@ typedef struct flags {
 	uint8_t data_org;
 	uint8_t can_adjust_vpp;
 	uint8_t can_adjust_vcc;
+	uint8_t can_adjust_clock;
+	uint8_t can_adjust_address;
 	uint8_t custom_protocol;
 	uint8_t has_power_down;
 	uint8_t is_powerdown_disabled;
@@ -151,6 +196,7 @@ typedef struct flags {
 typedef struct package_details {
 	uint8_t pin_count;
 	uint8_t adapter;
+	uint8_t plcc;
 	uint8_t icsp;
 	uint32_t packed_package;
 } package_details_t;
@@ -169,7 +215,7 @@ typedef struct pin_driver {
 } pin_driver_t;
 
 typedef struct algorithm {
-	char name[NAME_LEN];
+	char name[ALGO_NAME_LEN];
 	uint8_t *bitstream;
 	size_t length;
 } algorithm_t;
@@ -204,6 +250,15 @@ typedef struct device {
 	uint8_t t48_only;     /* chip available only for T48 */
 	uint8_t t56_only;     /* chip available only for T56 */
 	algorithm_t algorithm; /* Algorithm structure */
+	uint8_t spi_clock;     /* SPI clock for 25C devices */
+	uint8_t i2c_address;     /* Slave address for 24C devices */
+	const parameters_t *vpp_table;
+	const parameters_t *vcc_table;
+	const parameters_t *bb_vpp_table;
+	const parameters_t *bb_vcc_table;
+	const parameters_t *vcc_logic_table;
+	const parameters_t *spi_clock_table;
+	const char* adapter;
 } device_t;
 
 typedef struct minipro_status {
@@ -246,7 +301,6 @@ typedef struct cmdopts_s {
 		V_1V8 = 0,
 		V_3V3
 	} vopt;
-	uint8_t spi_speed;
 	uint8_t no_erase;
 	uint8_t protect_off;
 	uint8_t protect_on;
@@ -261,6 +315,8 @@ typedef struct cmdopts_s {
 	uint8_t is_pipe;
 	uint8_t version;
 	uint8_t force_erase;
+	uint8_t set_spi_clock;
+	uint8_t set_i2c_addr;
 	int filter_fuses;
 	int filter_locks;
 	int filter_uid;
@@ -278,9 +334,11 @@ typedef struct minipro_handle {
 	uint8_t version;
 	uint8_t speed;
 	float voltage;
+	uint8_t ext_power;
 	device_t *device;
 	void *usb_handle;
 	cmdopts_t *cmdopts;
+	uint8_t bitstream_uploaded;
 
 	int (*minipro_begin_transaction)(struct minipro_handle *);
 	int (*minipro_end_transaction)(struct minipro_handle *);
@@ -288,10 +346,8 @@ typedef struct minipro_handle {
 	int (*minipro_protect_on)(struct minipro_handle *);
 	int (*minipro_get_ovc_status)(struct minipro_handle *,
 				      struct minipro_status *, uint8_t *);
-	int (*minipro_read_block)(struct minipro_handle *, uint8_t, uint32_t,
-				  uint8_t *, size_t);
-	int (*minipro_write_block)(struct minipro_handle *, uint8_t, uint32_t,
-				   uint8_t *, size_t);
+	int (*minipro_read_block)(struct minipro_handle *, data_set_t *);
+	int (*minipro_write_block)(struct minipro_handle *, data_set_t *);
 	int (*minipro_get_chip_id)(struct minipro_handle *, uint8_t *,
 				   uint32_t *);
 	int (*minipro_spi_autodetect)(struct minipro_handle *, uint8_t,
@@ -302,15 +358,13 @@ typedef struct minipro_handle {
 				   uint8_t, uint8_t *);
 	int (*minipro_read_calibration)(struct minipro_handle *, uint8_t *,
 					size_t);
-	int (*minipro_erase)(struct minipro_handle *);
+	int (*minipro_erase)(struct minipro_handle *, uint8_t, uint8_t);
 	int (*minipro_unlock_tsop48)(struct minipro_handle *, uint8_t *);
 	int (*minipro_hardware_check)(struct minipro_handle *);
-	int (*minipro_write_jedec_row)(struct minipro_handle *, uint8_t *,
-				       uint8_t, uint8_t, size_t);
-	int (*minipro_read_jedec_row)(struct minipro_handle *, uint8_t *,
-				      uint8_t, uint8_t, size_t);
+	int (*minipro_write_jedec_row)(struct minipro_handle *, jedec_set_t *);
+	int (*minipro_read_jedec_row)(struct minipro_handle *, jedec_set_t *);
 	int (*minipro_firmware_update)(struct minipro_handle *, const char *);
-	int (*minipro_pin_test)(struct minipro_handle *);
+	int (*minipro_pin_test)(struct minipro_handle *, pin_map_t *);
 	int (*minipro_logic_ic_test)(struct minipro_handle *);
 	int (*minipro_reset_state)(struct minipro_handle *);
 	int (*minipro_set_zif_direction)(struct minipro_handle *, uint8_t *);
@@ -349,10 +403,8 @@ int minipro_protect_off(minipro_handle_t *handle);
 int minipro_protect_on(minipro_handle_t *handle);
 int minipro_get_ovc_status(minipro_handle_t *handle, minipro_status_t *status,
 			   uint8_t *ovc);
-int minipro_read_block(minipro_handle_t *handle, uint8_t type, uint32_t addr,
-		       uint8_t *buffer, size_t len);
-int minipro_write_block(minipro_handle_t *handle, uint8_t type, uint32_t addr,
-			uint8_t *bufffer, size_t len);
+int minipro_read_block(minipro_handle_t *handle, data_set_t *ds);
+int minipro_write_block(minipro_handle_t *handle, data_set_t *ds);
 int minipro_get_chip_id(minipro_handle_t *handle, uint8_t *type,
 			uint32_t *device_id);
 int minipro_spi_autodetect(minipro_handle_t *handle, uint8_t type,
@@ -363,11 +415,9 @@ int minipro_write_fuses(minipro_handle_t *handle, uint8_t type, size_t length,
 			uint8_t items_count, uint8_t *buffer);
 int minipro_read_calibration(minipro_handle_t *handle, uint8_t *buffer,
 			     size_t size);
-int minipro_write_jedec_row(minipro_handle_t *handle, uint8_t *buffer,
-			    uint8_t row, uint8_t flags, size_t size);
-int minipro_read_jedec_row(minipro_handle_t *handle, uint8_t *buffer,
-			   uint8_t row, uint8_t flags, size_t size);
-int minipro_erase(minipro_handle_t *handle);
+int minipro_write_jedec_row(minipro_handle_t *handle, jedec_set_t *js);
+int minipro_read_jedec_row(minipro_handle_t *handle, jedec_set_t *js);
+int minipro_erase(minipro_handle_t *handle, uint8_t num_fuses, uint8_t pld);
 int minipro_unlock_tsop48(minipro_handle_t *handle, uint8_t *status);
 int minipro_hardware_check(minipro_handle_t *handle);
 int minipro_firmware_update(minipro_handle_t *handle, const char *firmware);

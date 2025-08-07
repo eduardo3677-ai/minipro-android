@@ -54,23 +54,23 @@
 #define MP_VOLTAGES1		 0x0006
 #define MP_VOLTAGES2		 0x0007
 
+#define MP_VOLTAGE_MASK 0xffff0000
+
 /* Package mask */
-#define PLCC_MASK		 0xFF000000
-#define ADAPTER_MASK		 0x000000FF
-#define ICSP_MASK		 0x0000FF00
-#define PIN_COUNT_MASK		 0X7F000000
-#define SMD_MASK		 0X80000000
-#define PLCC32_ADAPTER		 0xFF000000
-#define PLCC44_ADAPTER		 0xFD000000
+#define SMD_FLAG             0x80000000
+#define ICSP_MASK            0x0000ff00
+#define ADAPTER_MASK         0x000000ff
+#define PIN_COUNT_MASK       0x3f000000
+#define PLCC20_ADAPTER       0x00000038
+#define PLCC44_ADAPTER       0x0000003d
+#define PLCC28_ADAPTER       0x0000003e
+#define PLCC32_ADAPTER       0x0000003f
 
 /* Supported programmers flags */
 #define T56_FLAG		 0x10000000
 #define TL866II_FLAG		 0x20000000
 #define T48_FLAG		 0x40000000
 #define DEVICE_MASK		 (T56_FLAG | T48_FLAG | TL866II_FLAG)
-
-#define ALGO_CRC_OFFSET		 0x04
-#define ALGO_DATA_OFFSET	 0x08
 
 /* infoic.xml name and tag names */
 #define INFOIC_NAME		 "infoic.xml"
@@ -87,9 +87,11 @@
 #define VOLTAGE_ATTR		 "voltage"
 #define INFOIC_ATTR_NAME	 "INFOIC"
 #define INFOIC2PLUS_ATTR_NAME	 "INFOIC2PLUS"
+#define INFOICT76_ATTR_NAME	 "INFOICT76"
 #define LOGIC_ATTR_NAME		 "LOGIC"
 #define ALGO_ATTR_NAME		 "ALGORITHMS"
-#define ALGOS_TAG		 "algorithms_t56"
+#define T56_ALGO_TAG		 "algorithms_T56"
+#define T76_ALGO_TAG		 "algorithms_T76"
 #define ALGO_TAG		 "algorithm"
 #define CFGS_TAG		 "configurations"
 #define MAPS_TAG		 "maps"
@@ -104,14 +106,157 @@
 
 #define INFOIC_DATABASE		 0x01
 #define INFOIC2PLUS_DATABASE	 0x02
-#define LOGIC_DATABASE		 0x03
-#define ALGORITHM_DATABASE	 0x04
+#define INFOICT76_DATABASE	0x03
+#define LOGIC_DATABASE		 0x04
+#define ALGORITHM_DATABASE	 0x05
 
 #define CUSTOM_PROTOCOL_MASK	 0x80000000
 #define MCU_CHIP		 0
 #define PLD_CHIP		 1
 
 #define CONFIG			 ((fuse_decl_t *)(device->config))
+
+/*
+ * Parameters lookup tables.
+ * The Vcc and Vpp settings are linked through the 'voltages'
+ * field of the device database.
+ * These are not raw DAC output values, but rather indices into
+ * internal lookup tables defined in the firmware.
+ * For bit-banging operations, we use separately defined
+ * lookup tables.
+ */
+ static const parameters_t tl866a_vpp_voltages[] =
+       {
+             { "10", 0x40 }, { "12.5", 0x00 }, { "13.5", 0x30 },
+             { "14", 0x50 }, { "16", 0x10 }, { "17", 0x70 },
+             { "18", 0x60 }, { "21", 0x20 }, { NULL, 0x00 }
+       };
+
+ static const parameters_t tl866a_vcc_voltages[] =
+       {
+             { "3.3", 0x02 }, { "4", 0x01 }, { "4.5", 0x05 },
+             { "5", 0x00 }, { "5.5", 0x04 }, { "6.5", 0x03 },
+             { NULL, 0x00 }
+       };
+
+ static const parameters_t tl866ii_vpp_voltages[] =
+       {
+             { "9", 0x10 }, { "9.5", 0x20 }, { "10", 0x30 },
+             { "11", 0x40 }, { "11.5", 0x50 }, { "12", 0x00 },
+             { "12.5", 0x60 }, { "13", 0x70 }, { "13.5", 0x80 },
+             { "14", 0x90 }, { "14.5", 0xa0 }, { "15.5", 0xb0 },
+             { "16", 0xc0 }, { "16.5", 0xd0 }, { "17", 0xe0 },
+             { "18", 0xf0 }, { NULL, 0x00 }
+       };
+
+ static const parameters_t tl866ii_vcc_voltages[] =
+       {
+             { "3.3", 0x01 }, { "4", 0x02 }, { "4.5", 0x03 },
+			 { "5", 0x00 }, { "5.5", 0x04 }, { "6.5", 0x05 },
+			 { NULL, 0x00 }
+       };
+
+ static const parameters_t xg_vpp_voltages[] =
+       {
+             { "9", 0x10 }, { "9.5", 0x20 }, { "10", 0x30 },
+             { "11", 0x40 }, { "11.5", 0x50 }, { "12", 0x00 },
+             { "12.5", 0x60 }, { "13", 0x70 }, { "13.5", 0x80 },
+             { "14", 0x90 }, { "14.5", 0xa0 }, { "15.5", 0xb0 },
+             { "16", 0xc0 }, { "16.5", 0xd0 }, { "17", 0xe0 },
+             { "18", 0xf0 }, { "21", 0xf2 }, { "25", 0xf1 },
+             { NULL, 0x00 }
+       };
+
+ static const parameters_t xg_pld_vpp_voltages[] =
+       {
+             { "9", 0x10 }, { "9.5", 0x20 }, { "10", 0x30 },
+             { "11", 0x40 }, { "11.5", 0x50 }, { "12", 0x00 },
+             { "12.5", 0x60 }, { "13", 0x70 }, { "13.5", 0x80 },
+             { "14", 0x90 }, { "14.5", 0xa0 }, { "15.5", 0xb0 },
+             { "16", 0xc0 }, { "16.5", 0xd0 }, { "17", 0xe0 },
+             { "18", 0xf0 }, { NULL, 0x00 }
+       };
+
+static const parameters_t xg_vcc_voltages[] =
+       {
+             { "1.2", 0x09 }, { "1.8", 0x06 }, { "2.5", 0x07 },
+             { "3", 0x08 }, { "3.3", 0x01 }, { "4", 0x02 },
+             { "4.5", 0x03 }, { "4.75", 0x0a }, { "5", 0x00 },
+             { "5.25", 0x0b }, { "5.5", 0x04 },  { "5.75", 0x0c },
+             { "6", 0x0d }, { "6.25", 0x0e },  { "6.5", 0x05 },
+             { NULL, 0x00 }
+       };
+
+static const parameters_t t48_bb_vcc_voltages[] =
+       {
+             { "1.75", 0x01 }, { "1.8", 0x02 }, { "1.9", 0x03 },
+             { "2", 0x04 }, { "2.1", 0x05 }, { "2.2", 0x06 },
+             { "2.3", 0x08 }, { "2.4", 0x09 }, { "2.5", 0x0a },
+             { "2.6", 0x0b }, { "2.7", 0x0d }, { "2.8", 0x0e },
+             { "2.9", 0x0f }, { "3", 0x10 }, { "3.3", 0x14 },
+             { "3.5", 0x16 }, { "3.7", 0x18 }, { "3.8", 0x1a },
+             { "4", 0x1c }, { "4.2", 0x1e }, { "4.3", 0x20 },
+             { "4.4", 0x21 }, { "4.5", 0x22 }, { "4.7", 0x25 },
+             { "4.8", 0x26 }, { "4.9", 0x27 }, { "5", 0x28 },
+             { "5.2", 0x2b }, { "5.3", 0x2c }, { "5.4", 0x2d },
+             { "5.5", 0x2f }, { "5.6", 0x30 }, { "5.7", 0x31 },
+             { "5.8", 0x32 }, { "5.9", 0x33 }, { "6", 0x34 },
+             { "6.1", 0x35 }, { "6.2", 0x36 }, { "6.3", 0x38 },
+             { "6.5", 0x3b }, { "6.6", 0x3c }, { "6.7", 0x3d },
+             { "6.8", 0x3e }, { "6.9", 0x3f }, { NULL, 0x00 }
+       };
+
+static const parameters_t t48_bb_vpp_voltages[] =
+       {
+             { "9", 0x00 }, { "9.5", 0x01 }, { "10", 0x03 },
+             { "11", 0x07 }, { "11.5", 0x09 }, { "12", 0x0b },
+             { "12.5", 0x0d }, { "13", 0x0e }, { "13.5", 0x11 },
+             { "14", 0x13 }, { "14.5", 0x15 }, { "15.5", 0x18 },
+             { "16", 0x1a }, { "16.5", 0x1c }, { "17", 0x1e },
+             { "18", 0x23 }, { "21", 0x2f }, { "25", 0x3e },
+             { NULL, 0x00 }
+       };
+
+static const parameters_t vcc_logic_voltages[] =
+       {
+             { "1.8", 0x03 }, { "2.5", 0x02 }, { "3.3", 0x01 },
+             { "5", 0x00 }, { NULL, 0x00 }
+       };
+
+static const parameters_t t48_spi_clock[] =
+       {
+	         { "4", 0x00 }, { "8", 0x01 }, { "15", 0x02 },
+	         { "30", 0x03 }, {NULL, 0x00}
+       };
+
+static const parameters_t t56_spi_clock[] =
+	   {
+	         { "8", 0x00 }, { "16", 0x01 }, { "25", 0x02 },
+	         { "50", 0x03 }, {NULL, 0x00}
+	   };
+
+static const parameters_t t76_spi_clock_1[] =
+       {
+             { "4", 0x00 }, { "8", 0x01 }, { "16", 0x02 },
+             { "24", 0x03 }, { "30", 0x04 }, { "40", 0x05 },
+             { "50", 0x06 }, { "60", 0x07 },  {NULL, 0x00}
+       };
+
+static const parameters_t t76_spi_clock_2[] =
+       {
+             { "0.5", 0x00 }, { "1", 0x01 }, { "2", 0x02 },
+             { "3", 0x03 }, { "4", 0x04 }, {NULL, 0x00}
+       };
+
+/* Default SPI clock frequency defines. */
+#define DEFAULT_T48_SPI_CLOCK    0x01 /*  8 MHz */
+#define DEFAULT_T56_SPI_CLOCK    0x01 /* 16 MHz */
+#define DEFAULT_T76_SPI_CLOCK_1  0x02 /* 16 MHz */
+#define DEFAULT_T76_SPI_CLOCK_2  0x01 /*  1 MHz */
+
+#define DEFAULT_24C_ADDRESS 0xA0
+#define DEFAULT_LOGIC_VOLTAGE 0x00 /* 5 V */
+
 
 /* State machine structure used by sax device parser callback function
  * for persistent data between calls.
@@ -137,6 +282,8 @@ typedef struct state_machine_d {
 	uint32_t t48_custom_count;
 	uint32_t t56_count;
 	uint32_t t56_custom_count;
+	uint32_t t76_count;
+	uint32_t t76_custom_count;
 	uint32_t logic_count;
 	uint32_t logic_custom_count;
 	uint8_t load_vectors;
@@ -179,10 +326,10 @@ typedef struct state_machine_a {
 	db_data_t *db_data;
 } state_machine_a_t;
 
-/* T56 algorithm prefixes table mapped to protocol_id.
+/* T56/T76 algorithm prefixes table mapped to protocol_id.
  * The final name is computed at runtime.
  */
-static const char t56_algo_table[][16] = {
+static const char algo_table[][16] = {
 /*	 0x01		 0x02	   	0x03	  0x04 		  0x05       0x06		*/
 	"IIC24C",	"MW93ALG", "SPI25F", "AT45D",	 "F29EE",   "W29F32P",
 
@@ -214,7 +361,7 @@ static const char t56_algo_table[][16] = {
 /*
  * T56  utility algorithms name table used for various tasks.
  */
-static const char t56_util_table[][16] = {
+static const char t56_util_table[][ALGO_NAME_LEN] = {
 	"TTL1",	       "TTL2",	       "Pindect100M",  "STGND",
 	"StPVGI",      "uart_vga",     "vga_11",       "vga_21",
 	"vga1024x768", "vga1152x864",  "vga1280x1024", "vga1280x800",
@@ -222,20 +369,52 @@ static const char t56_util_table[][16] = {
 	"vga_hdmi"
 };
 
-#define ALGO_COUNT (sizeof((t56_algo_table))/(sizeof(t56_algo_table[0])))
-#define UTIL_COUNT (sizeof((t56_util_table))/(sizeof(t56_util_table[0])))
+/*
+ * T76  utility algorithms name table used for various tasks.
+ */
+static const char t76_util_table[][ALGO_NAME_LEN] = {
+	"Test_100M", "TestGND", "TestLgcDown", "TestLgcPull", "TestVcc",
+};
+
+
+#define ALGO_COUNT (sizeof((algo_table))/(sizeof(algo_table[0])))
+#define T56_UTIL_COUNT (sizeof((t56_util_table))/(sizeof(t56_util_table[0])))
+#define T76_UTIL_COUNT (sizeof((t76_util_table))/(sizeof(t76_util_table[0])))
+
+
+/* CRC and data offset in algorithm files */
+#define ALGO_SIZE_OFFSET 0x00
+#define ALGO_CRC_OFFSET	 0x04
+#define ALGO_DATA_OFFSET 0x08
+
 
 
 static int parse_profiles(state_machine_p_t *);
 
+/* Pack voltages.
+ * This is for future expansion.
+ */
+void pack_voltages(voltages_t *voltages)
+{
+	voltages->raw_voltages = (voltages->raw_voltages & MP_VOLTAGE_MASK) |
+				 (voltages->vdd << 12) | (voltages->vcc << 8) |
+				 voltages->vpp;
+}
+
 /* return pin count from package_details */
 static uint32_t get_pin_count(uint32_t package_details)
 {
-	if ((package_details & PLCC_MASK) == PLCC32_ADAPTER)
+	switch PIN_COUNT(package_details){
+	case PLCC20_ADAPTER:
+		return 20;
+	case PLCC28_ADAPTER:
+		return 28;
+	case PLCC32_ADAPTER:
 		return 32;
-	else if ((package_details & PLCC_MASK) == PLCC44_ADAPTER)
+	case PLCC44_ADAPTER:
 		return 44;
-	return ((package_details & PIN_COUNT_MASK) >> 24);
+	}
+	return PIN_COUNT(package_details);
 }
 
 /* Parse a numeric 32 bit value from an attribute */
@@ -393,8 +572,8 @@ static int load_mem_device(db_data_t *db_data, const char *xml_device,
 			   size_t size, device_t *device, uint8_t version)
 {
 	int err = 0;
-	uint32_t voltages, protocol_id, flags, opts, read_bufer_size,
-		write_buffer_size;
+	uint32_t voltages, protocol_id = 0, flags = 0, opts = 0,
+			   read_bufer_size = 0, write_buffer_size = 0;
 	Memblock memblock;
 
 	err += get_attr_value(xml_device, size, "type", &device->chip_type);
@@ -421,22 +600,26 @@ static int load_mem_device(db_data_t *db_data, const char *xml_device,
 	err += get_attr_value(xml_device, size, "flags", &flags);
 	err += get_attr_value(xml_device, size, "chip_info",
 			      &device->chip_info);
-	if (version == INFOIC2PLUS_DATABASE) {
+	if (version != INFOIC_DATABASE) {
 		err += get_attr_value(xml_device, size, "pin_map", &opts);
 		err += get_attr_value(xml_device, size, "pages_per_block",
 				      &device->pages_per_block);
-		device->tl866_only = (opts & TL866II_FLAG) ? 1 : 0;
-		device->t48_only = (opts & T48_FLAG) ? 1 : 0;
-		device->t56_only = (opts & T56_FLAG) ? 1 : 0;
 		device->pin_map = (uint8_t)opts;
 	}
+	if (version == INFOIC2PLUS_DATABASE) {
+		device->tl866_only = (opts & TL866II_FLAG) != 0;
+		device->t48_only = (opts & T48_FLAG) != 0;
+		device->t56_only = (opts & T56_FLAG) != 0;
+	}
+	uint32_t package_details = 0;
 	err += get_attr_value(xml_device, size, "package_details",
-			      &device->package_details.packed_package);
+			      &package_details);
+	device->package_details.packed_package = package_details;
 
 	if (err)
 		return EXIT_FAILURE;
 
-	/* get blank value if present */
+	/* Get blank value if present */
 	uint32_t blank_value;
 	device->blank_value = get_attr_value(xml_device, size, "blank_value",
 					     &blank_value) == EXIT_SUCCESS ?
@@ -472,29 +655,24 @@ static int load_mem_device(db_data_t *db_data, const char *xml_device,
 
 	/* Unpack flags */
 	device->flags.raw_flags = flags;
-	device->flags.can_erase = (flags & MP_ERASE_MASK) ? 1 : 0;
-	device->flags.has_chip_id = (flags & MP_ID_MASK) ? 1 : 0;
-	device->flags.has_data_offset = (flags & MP_DATA_MEMORY_ADDRESS) ? 1 :
-									   0;
-	device->flags.has_word = (flags & MP_DATA_BUS_WIDTH) ? 1 : 0;
-	device->flags.off_protect_before = (flags & MP_OFF_PROTECT_BEFORE) ? 1 :
-									     0;
-	device->flags.protect_after = (flags & MP_PROTECT_AFTER) ? 1 : 0;
-	device->flags.lock_bit_write_only =
-		(flags & MP_LOCK_BIT_WRITE_ONLY) ? 1 : 0;
-	device->flags.has_calibration = (flags & MP_CALIBRATION) ? 1 : 0;
+	device->flags.can_erase = (flags & MP_ERASE_MASK) != 0;
+	device->flags.has_chip_id = (flags & MP_ID_MASK) != 0;
+	device->flags.has_data_offset = (flags & MP_DATA_MEMORY_ADDRESS) != 0;
+	device->flags.off_protect_before = (flags & MP_OFF_PROTECT_BEFORE) != 0;
+	device->flags.protect_after = (flags & MP_PROTECT_AFTER) != 0;
+	device->flags.lock_bit_write_only = (flags & MP_LOCK_BIT_WRITE_ONLY) !=
+					    0;
+	device->flags.has_calibration = (flags & MP_CALIBRATION) != 0;
 	device->flags.prog_support = (flags & MP_SUPPORTED_PROGRAMMING) >> 20;
 	device->flags.data_org = (flags & MP_DATA_ORG) >> 24;
 	device->flags.word_size = (flags & MP_DATA_ORG) == 0x01000000 ? 2 : 1;
-	device->flags.can_adjust_vcc = device->chip_info == MP_VOLTAGES1 ? 1 :
-									   0;
-	device->flags.can_adjust_vpp = device->chip_info == MP_VOLTAGES2 ? 1 :
-									   0;
+	device->flags.can_adjust_vcc = (device->chip_info == MP_VOLTAGES1);
+	device->flags.can_adjust_vpp = (device->chip_info == MP_VOLTAGES2);
 	device->flags.has_power_down =
 		(voltages & LAST_JEDEC_BIT_IS_POWERDOWN_ENABLE) != 0;
 	device->flags.is_powerdown_disabled =
 		(voltages & POWERDOWN_MODE_DISABLE) != 0;
-	device->flags.reversed_package = (flags & MP_REVERSED_PACKAGE) ? 1 : 0;
+	device->flags.reversed_package = (flags & MP_REVERSED_PACKAGE) != 0;
 
 	/* Check for custom defined protocol */
 	device->protocol_id = (uint8_t)protocol_id;
@@ -512,12 +690,10 @@ static int load_mem_device(db_data_t *db_data, const char *xml_device,
 	device->voltages.vpp = voltages & 0xff;
 
 	/* Unpacking package details */
-	device->package_details.pin_count =
-		get_pin_count(device->package_details.packed_package);
-	device->package_details.adapter =
-		device->package_details.packed_package & ADAPTER_MASK;
-	device->package_details.icsp =
-		(device->package_details.packed_package & ICSP_MASK) >> 8;
+	device->package_details.pin_count = get_pin_count(package_details);
+	device->package_details.adapter = package_details & ADAPTER_MASK;
+	device->package_details.icsp = (package_details & ICSP_MASK) >> 8;
+	device->package_details.plcc = PIN_COUNT(package_details) > 0x30;
 
 	/* Fill some device parameters */
 	device->compare_mask = 0xff;
@@ -540,7 +716,6 @@ static int load_mem_device(db_data_t *db_data, const char *xml_device,
 	case PIC_INSTR_WORD_WIDTH_16_PIC18J:
 		device->compare_mask = 0xffff;
 		device->flags.word_size = 2;
-		device->flags.has_word = 1;
 
 		/* This will tell us if PIC user id is 8bit or more */
 		device->flags.data_org = 0; /* User ID is 8 bit */
@@ -553,31 +728,108 @@ static int load_mem_device(db_data_t *db_data, const char *xml_device,
 		}
 		break;
 	}
+
+	/* Initialize the spi clock and i2c address flags */
+	device->flags.can_adjust_clock = 0;
+	device->flags.can_adjust_address = 0;
+	switch (db_data->prog_version) {
+	case MP_T48:
+	case MP_T56:
+	case MP_T76:
+		if (device->protocol_id == IC2_ALG_SPI25F_1 ||
+		    device->protocol_id == IC2_ALG_SPI25F_2 ||
+		    device->protocol_id == IC2_ALG_AT45D) {
+			device->flags.can_adjust_clock = 1;
+		}
+		if (db_data->prog_version == MP_T76 &&
+		    device->protocol_id == IC2_ALG_IIC24C) {
+			device->flags.can_adjust_address = 1;
+		}
+		break;
+	}
+
+	/* Initialize parameter tables */
+	switch (db_data->prog_version) {
+	case MP_TL866A:
+	case MP_TL866CS:
+		device->vcc_table = tl866a_vcc_voltages;
+		device->vpp_table = tl866a_vpp_voltages;
+		device->bb_vcc_table = tl866a_vcc_voltages;
+		device->bb_vpp_table = tl866a_vpp_voltages;
+		break;
+	case MP_TL866IIPLUS:
+		device->vcc_table = tl866ii_vcc_voltages;
+		device->vpp_table = tl866ii_vpp_voltages;
+		device->bb_vcc_table = tl866ii_vcc_voltages;
+		device->bb_vpp_table = tl866ii_vpp_voltages;
+		break;
+	case MP_T48:
+		device->vcc_table = xg_vcc_voltages;
+		device->vpp_table = xg_vpp_voltages;
+		device->bb_vcc_table = t48_bb_vcc_voltages;
+		device->bb_vpp_table = t48_bb_vpp_voltages;
+		device->spi_clock_table = t48_spi_clock;
+		device->spi_clock = DEFAULT_T48_SPI_CLOCK;
+		break;
+	case MP_T56:
+		device->vcc_table = xg_vcc_voltages;
+		device->vpp_table = xg_vpp_voltages;
+		device->spi_clock_table = t56_spi_clock;
+		device->spi_clock = DEFAULT_T56_SPI_CLOCK;
+		break;
+	case MP_T76:
+		device->vcc_table = xg_vcc_voltages;
+
+		/* Limit the PLD VPP voltage to 18 V */
+		device->vpp_table = device->chip_type == MP_PLD ?
+					    xg_pld_vpp_voltages :
+					    xg_vpp_voltages;
+		if (device->protocol_id == IC2_ALG_SPI25F_1) {
+			device->spi_clock_table = t76_spi_clock_1;
+			device->spi_clock = DEFAULT_T76_SPI_CLOCK_1;
+		} else {
+			device->spi_clock_table = t76_spi_clock_2;
+			device->spi_clock = DEFAULT_T76_SPI_CLOCK_2;
+		}
+		device->i2c_address = DEFAULT_24C_ADDRESS;
+		break;
+	}
+
 	return EXIT_SUCCESS;
 }
 
-/* Load a device from an xml 'ic' tag */
+/* Load a logic device from an xml 'ic' tag */
 static int load_logic_device(const char *xml_device, size_t size,
 			     device_t *device)
 {
 	Memblock voltage = get_attribute(xml_device, size, VOLTAGE_ATTR);
 	if (!voltage.b)
 		return EXIT_FAILURE;
-
-	if (!tagcmpn(voltage.b, voltage.z, "5V"))
-		device->voltages.vcc = 0;
-	else if (!tagcmpn(voltage.b, voltage.z, "3V3"))
-		device->voltages.vcc = 1;
-	else if (!tagcmpn(voltage.b, voltage.z, "2V5"))
-		device->voltages.vcc = 2;
-	else if (!tagcmpn(voltage.b, voltage.z, "1V8"))
-		device->voltages.vcc = 3;
-	else
+	char *value = strndup(voltage.b, voltage.z - 1);
+	if (value == NULL) {
 		return EXIT_FAILURE;
+	}
+
+	/* Find the logic VCC voltage */
+	device->voltages.vcc = DEFAULT_LOGIC_VOLTAGE;
+	const parameters_t *table = vcc_logic_voltages;
+	while (table->name) {
+		if (!strcasecmp(table->name, value)) {
+			device->voltages.vcc = table->value;
+			table = NULL;
+			break;
+		}
+		table++;
+	}
+	free(value);
+	if (table != NULL) {
+		return EXIT_FAILURE;
+	}
 
 	uint32_t pin_count;
 	if (get_attr_value(xml_device, size, "pins", &pin_count))
 		return EXIT_FAILURE;
+	device->vcc_logic_table = vcc_logic_voltages;
 	device->package_details.pin_count = pin_count;
 	return EXIT_SUCCESS;
 }
@@ -667,8 +919,11 @@ static int algo_callback(int type, const char *tag, size_t taglen,
 				return XML_OK;
 		}
 
-		/* skip until an 'algorithm' tag is found */
-		if (!tagcmpn(tag, taglen, ALGOS_TAG)) {
+		/* skip until the desired algorithm database is found */
+		if (!tagcmpn(tag, taglen,
+			     sm->db_data->db_version == MP_T56 ?
+				     T56_ALGO_TAG :
+				     T76_ALGO_TAG)) {
 			sm->has_algo = 1;
 			return XML_OK;
 		}
@@ -785,7 +1040,8 @@ static int map_callback(int type, const char *tag, size_t taglen,
 					    sm->map->mask, sm->map->mask_count))
 					return EXIT_FAILURE;
 
-				sm->found |= 2; /* Mark 'mask was parsed' flag */
+				sm->found |=
+					2; /* Mark 'mask was parsed' flag */
 				return XML_OK;
 			}
 		}
@@ -797,7 +1053,7 @@ static int map_callback(int type, const char *tag, size_t taglen,
 			return XML_OK;
 
 		/* map tag found, compare with needed name */
-		uint32_t value;
+		uint32_t value = 0;
 		if (get_attr_value(tag, taglen, "index", &value))
 			return EXIT_FAILURE;
 
@@ -858,7 +1114,7 @@ static int profile_callback(int type, const char *tag, size_t taglen,
 				       memblock.b, memblock.z);
 
 				/* get fuse comma separated values */
-				uint16_t value[2];
+				uint16_t value[2] = { 0 };
 				if (get_csv(tag, taglen, "fuse", value, 2))
 					return EXIT_FAILURE;
 
@@ -882,7 +1138,7 @@ static int profile_callback(int type, const char *tag, size_t taglen,
 				       memblock.b, memblock.z);
 
 				/* get lock comma separated values */
-				uint16_t value[2];
+				uint16_t value[2] = { 0 };
 				if (get_csv(tag, taglen, "lock", value, 2))
 					return EXIT_FAILURE;
 				config->lock[sm->cur_lock].mask = value[0];
@@ -894,7 +1150,7 @@ static int profile_callback(int type, const char *tag, size_t taglen,
 			/* get fuse count */
 			if (sm->config && !tagcmpn(tag, taglen, FUSES_TAG)) {
 				/* grab the 'num_fuses' attribute */
-				uint32_t num_fuses;
+				uint32_t num_fuses = 0;
 				if (get_attr_value(tag, taglen, COUNT_ATTR,
 						   &num_fuses))
 					return EXIT_FAILURE;
@@ -912,7 +1168,7 @@ static int profile_callback(int type, const char *tag, size_t taglen,
 			/* get lock count */
 			if (sm->config && !tagcmpn(tag, taglen, LOCKS_TAG)) {
 				/* grab the 'num_locks' attribute */
-				uint32_t num_locks;
+				uint32_t num_locks = 0;
 				if (get_attr_value(tag, taglen, COUNT_ATTR,
 						   &num_locks))
 					return EXIT_FAILURE;
@@ -935,7 +1191,7 @@ static int profile_callback(int type, const char *tag, size_t taglen,
 			if (config->acw_size &&
 			    sm->cur_fuse < config->acw_size) {
 				/* get fuse values */
-				uint16_t value;
+				uint16_t value = 0;
 
 				if (get_csv(tag, taglen, "fuse", &value, 1))
 					return EXIT_FAILURE;
@@ -948,15 +1204,15 @@ static int profile_callback(int type, const char *tag, size_t taglen,
 			/* get acw_bits count */
 			if (sm->config && !tagcmpn(tag, taglen, ACW_BITS)) {
 				/* grab the 'acw_size' attribute */
-				uint32_t acw_size;
+				uint32_t acw_size = 0;
 				if (get_attr_value(tag, taglen, COUNT_ATTR,
 						   &acw_size))
 					return EXIT_FAILURE;
 				config->acw_size = acw_size;
 
-				config->acw_bits =
-					malloc(config->acw_size *
-					       sizeof(*config->acw_bits));
+				config->acw_bits = calloc(
+					1, config->acw_size *
+						   sizeof(*config->acw_bits));
 				if (!config->acw_bits)
 					return ERRMEM;
 				return XML_OK;
@@ -986,8 +1242,9 @@ static int profile_callback(int type, const char *tag, size_t taglen,
 			gal_config_t *config = (gal_config_t *)sm->config;
 
 			/* All parameters required */
-			uint32_t fuses_size, row_width, ues_address, ues_size,
-				powerdown_row, acw_address;
+			uint32_t fuses_size = 0, row_width = 0, ues_address = 0,
+				 ues_size = 0, powerdown_row = 0,
+				 acw_address = 0;
 			err = get_attr_value(tag, taglen, "fuses_size",
 					     &fuses_size);
 			err += get_attr_value(tag, taglen, "row_width",
@@ -1016,8 +1273,9 @@ static int profile_callback(int type, const char *tag, size_t taglen,
 			fuse_decl_t *config = (fuse_decl_t *)sm->config;
 
 			/* Unused parameters can be omitted */
-			uint32_t num_calibytes, num_uids, config_addr,
-				osccal_save, eep_addr, bg_mask;
+			uint32_t num_calibytes = 0, num_uids = 0,
+				 config_addr = 0, osccal_save = 0, eep_addr = 0,
+				 bg_mask = 0;
 			err = get_attr_value(tag, taglen, "num_calibytes",
 					     &num_calibytes);
 			if (err && err != ERREND)
@@ -1102,6 +1360,10 @@ static int device_callback(int type, const char *tag, size_t taglen,
 
 			/* Count all devices and add them to the desired target */
 			switch (sm->db_version) {
+			case INFOICT76_DATABASE:
+				sm->custom ? (sm->t76_custom_count += count) :
+					     (sm->t76_count += count);
+				break;
 			case INFOIC2PLUS_DATABASE:
 
 				/* Grab the pin_map field  */
@@ -1146,7 +1408,7 @@ static int device_callback(int type, const char *tag, size_t taglen,
 
 			/* Filter only devices from the desired database */
 			if (sm->count_only ||
-			    sm->db_data->version != sm->db_version)
+			    sm->db_data->db_version != sm->db_version)
 				return XML_OK;
 
 			/* Only print device name */
@@ -1187,8 +1449,11 @@ static int device_callback(int type, const char *tag, size_t taglen,
 				if (sm->found && !strlen(sm->device->name)) {
 					char *end = memchr(mb_name.b, ',',
 							   mb_name.z);
+
 					/* If only one chip name, use it */
-					if (!end) end = (char*)mb_name.b + mb_name.z;
+					if (!end)
+						end = (char *)mb_name.b +
+						      mb_name.z;
 					strncpy(sm->device->name, mb_name.b,
 						end - mb_name.b);
 					sm->found_count++;
@@ -1197,8 +1462,8 @@ static int device_callback(int type, const char *tag, size_t taglen,
 			}
 
 			/* Search and load device (-p and -d) */
-			char *name = search_chip_name(
-				&mb_name, sm->db_data->device_name);
+			char *name = search_chip_name(&mb_name,
+						      sm->db_data->device_name);
 			if (name) {
 				if (sm->found_count && !sm->custom)
 					return XML_OK;
@@ -1206,7 +1471,7 @@ static int device_callback(int type, const char *tag, size_t taglen,
 				free(name);
 				if (load_device(sm->db_data, tag, taglen,
 						sm->device,
-						sm->db_data->version))
+						sm->db_data->db_version))
 					return EXIT_FAILURE;
 				sm->found_count++;
 
@@ -1224,7 +1489,9 @@ static int device_callback(int type, const char *tag, size_t taglen,
 		if (tagcmpn(tag, taglen, DB_TAG))
 			return XML_OK;
 		mb_name = get_attribute(tag, taglen, TYPE_ATTR);
-		if (!tagcmpn(mb_name.b, mb_name.z, INFOIC2PLUS_ATTR_NAME))
+		if (!tagcmpn(mb_name.b, mb_name.z, INFOICT76_ATTR_NAME))
+			sm->db_version = INFOICT76_DATABASE;
+		else if (!tagcmpn(mb_name.b, mb_name.z, INFOIC2PLUS_ATTR_NAME))
 			sm->db_version = INFOIC2PLUS_DATABASE;
 		else if (!tagcmpn(mb_name.b, mb_name.z, INFOIC_ATTR_NAME))
 			sm->db_version = INFOIC_DATABASE;
@@ -1476,29 +1743,30 @@ static int parse_xml_file(void *sm, const char *name, const char *cli_name)
 /* Parse xml database */
 static int parse_xml(state_machine_d_t *sm)
 {
-	int version = sm->db_data->version;
-	sm->db_data->version = LOGIC_DATABASE;
+	int version = sm->db_data->db_version;
+	sm->db_data->db_version = LOGIC_DATABASE;
 	int ret = parse_xml_file(sm, LOGICIC_NAME, sm->db_data->logicic_path);
 	if (ret)
 		return ret;
 	if (!sm->count_only && sm->device->chip_type == MP_LOGIC)
 		return ret;
-	sm->db_data->version = version;
+	sm->db_data->db_version = version;
 	return parse_xml_file(sm, INFOIC_NAME, sm->db_data->infoic_path);
 }
 
 /* Translate programmer version to internal database version */
 static void translate_db(db_data_t *db_data)
 {
-	switch (db_data->version) {
+	switch (db_data->prog_version) {
 	case MP_TL866A:
 	case MP_TL866CS:
-		db_data->version = INFOIC_DATABASE;
+		db_data->db_version = INFOIC_DATABASE;
 		break;
-	case MP_TL866IIPLUS:
-	case MP_T48:
-	case MP_T56:
-		db_data->version = INFOIC2PLUS_DATABASE;
+	case MP_T76:
+		db_data->db_version = INFOICT76_DATABASE;
+		break;
+	default:
+		db_data->db_version = INFOIC2PLUS_DATABASE;
 	}
 }
 
@@ -1564,7 +1832,7 @@ int list_devices(db_data_t *db_data)
 	device.chip_id = db_data->chip_id;
 	device.package_details.pin_count = db_data->pin_count;
 	memset(device.name, 0, sizeof(device.name));
-	int flag = (db_data->chip_id || db_data->pin_count) ? 1 : 0;
+	int flag = (db_data->chip_id || db_data->pin_count) != 0;
 
 	/* Initialize state machine structure */
 	translate_db(db_data);
@@ -1601,14 +1869,15 @@ int print_chip_count(db_data_t *db_data)
 	fprintf(stderr,
 		"TL866A/CS:\t%5u devices, %u custom\nTL866II+:\t%5u devices, %u custom\n"
 		"T48:\t\t%5u devices, %u custom\nT56:\t\t%5u devices, %u custom\n"
-		"Logic:\t\t%5u devices, %u custom\n",
+		"T76:\t\t%5u devices, %u custom\nLogic:\t\t%5u devices, %u custom\n",
 		sm.infoic_count, sm.infoic_custom_count,
 		sm.infoic2_count - sm.t48_count - sm.t56_count,
 		sm.infoic2_custom_count,
 		sm.infoic2_count - sm.t56_count - sm.tl866ii_count,
 		sm.t48_custom_count,
 		sm.infoic2_count - sm.t48_count - sm.tl866ii_count,
-		sm.t56_custom_count, sm.logic_count, sm.logic_custom_count);
+		sm.t56_custom_count, sm.t76_count, sm.t76_custom_count,
+		sm.logic_count, sm.logic_custom_count);
 	return EXIT_SUCCESS;
 }
 
@@ -1621,7 +1890,7 @@ pin_map_t *get_pin_map(db_data_t *db_data)
 	}
 
 	/* Set the Infoic2Plus database for pin map search */
-	db_data->version = INFOIC2PLUS_DATABASE;
+	db_data->db_version = INFOIC2PLUS_DATABASE;
 	state_machine_m_t sm;
 	memset(&sm, 0, sizeof(sm));
 	sm.db_data = db_data;
@@ -1635,22 +1904,34 @@ pin_map_t *get_pin_map(db_data_t *db_data)
 }
 
 /* Return an algorithm_t structure */
-int get_algorithm(device_t *device, const char *algo_path, uint8_t icsp,
-		  uint8_t vopt, size_t offset)
+int get_algorithm(device_t *device, uint8_t model, const char *algo_path,
+		  uint8_t icsp, uint8_t vopt)
 {
 	algorithm_t *algorithm = &device->algorithm;
 	uint8_t algo_number = (uint8_t)(device->variant >> 8);
 	uint8_t error = 0;
 	const char *entry;
+	const char(*util_table)[ALGO_NAME_LEN];
+	int util_count;
+
+	if (model == MP_T56) {
+		util_table = t56_util_table;
+		util_count = T56_UTIL_COUNT;
+	} else if (model == MP_T76) {
+		util_table = t76_util_table;
+		util_count = T76_UTIL_COUNT;
+	} else {
+		return EXIT_FAILURE;
+	}
 
 	/* Check if the arguments are in valid range */
 	if (device->protocol_id != IC2_ALG_NONE) {
 		int isProtocolValid = device->protocol_id > ALGO_COUNT;
-		entry = t56_algo_table[device->protocol_id - 1];
+		entry = algo_table[device->protocol_id - 1];
 		if (isProtocolValid || (entry == NULL))
 			error = 1;
 	} else {
-		if (algo_number > UTIL_COUNT)
+		if (algo_number > util_count)
 			error = 1;
 	}
 
@@ -1661,7 +1942,6 @@ int get_algorithm(device_t *device, const char *algo_path, uint8_t icsp,
 
 	/* If not a logic chip grab the prefix name using the protocol_id-1 */
 	if (device->protocol_id != IC2_ALG_NONE) {
-
 		char algo_str[8];
 		snprintf(algo_str, sizeof(algo_str), "%02X", algo_number);
 		char *name = stpcpy(algorithm->name, entry);
@@ -1669,7 +1949,7 @@ int get_algorithm(device_t *device, const char *algo_path, uint8_t icsp,
 		switch (device->protocol_id) {
 		/* Choose icsp algorithm for Atmel ATmega, ATtiny and AT90 */
 		case IC2_ALG_ATMGA:
-				strcat(name, icsp ? "11S" : algo_str);
+			strcat(name, icsp ? "11S" : algo_str);
 			break;
 
 		/* Choose ICSP option for AT89C*/
@@ -1679,11 +1959,11 @@ int get_algorithm(device_t *device, const char *algo_path, uint8_t icsp,
 
 		/* Choose algorithm variant and 1.8V/3.3V for EMMC */
 		case IC2_ALG_EMMC:
-			sprintf(name, "%02x", (device->variant>>8));
-			strcat(name, V_1V8 ? "_18" : "_33");
-		break;
+			sprintf(name, "%02x", algo_number);
+			strcat(name, vopt == V_1V8 ? "_18" : "_33");
+			break;
 
-			/* Default case. Handle reversed package devices */
+		/* Default case. Handle reversed package devices */
 		default:
 			strcat(name, algo_str);
 			if (device->flags.reversed_package)
@@ -1691,13 +1971,14 @@ int get_algorithm(device_t *device, const char *algo_path, uint8_t icsp,
 		}
 		/* For Logic chips/utils copy only the algorithm name */
 	} else {
-		strncpy(algorithm->name, t56_util_table[algo_number], NAME_LEN);
+		strncpy(algorithm->name, util_table[algo_number],
+			ALGO_NAME_LEN);
 	}
 
 	/* Set the database for algorithm search */
 	db_data_t db_data;
 	const char *algo_name = algorithm->name;
-	db_data.version = ALGORITHM_DATABASE;
+	db_data.db_version = model;
 	db_data.algo_path = algo_path;
 	db_data.device_name = algo_name;
 
@@ -1736,10 +2017,12 @@ int get_algorithm(device_t *device, const char *algo_path, uint8_t icsp,
 	uint32_t usize =
 		load_int((uint8_t *)(gzip + out_size - 4), 4, MP_LITTLE_ENDIAN);
 
-	/* Round up to the nearest 512 byte multiple  */
-	algorithm->length = usize + (0x200 - (usize % 0x200));
+	/* Round up to the nearest 512 byte multiple (T56 only).  */
+	algorithm->length =
+		usize + (model == MP_T56 ? (0x200 - (usize % 0x200)) : 0);
 
-	algorithm->bitstream = calloc(1, algorithm->length + offset);
+	/* Allocate required data buffer */
+	algorithm->bitstream = calloc(1, algorithm->length);
 	if (!algorithm->bitstream) {
 		fprintf(stderr, "Out of memory!\n");
 		return EXIT_FAILURE;
@@ -1748,7 +2031,7 @@ int get_algorithm(device_t *device, const char *algo_path, uint8_t icsp,
 	/* Uncompress data using zlib */
 	z_stream stream = { .next_in = (Bytef *)gzip,
 			    .avail_in = (uInt)out_size,
-			    .next_out = (Bytef *)algorithm->bitstream + offset,
+			    .next_out = (Bytef *)algorithm->bitstream,
 			    .avail_out = algorithm->length };
 
 	int inf_init_err = inflateInit2(&stream, MAX_WBITS + 16);
@@ -1770,12 +2053,10 @@ int get_algorithm(device_t *device, const char *algo_path, uint8_t icsp,
 	}
 
 	/* Check for algorithm integrity */
-	uint32_t file_crc =
-		load_int(algorithm->bitstream + offset + ALGO_CRC_OFFSET, 4,
-			 MP_LITTLE_ENDIAN);
-	uint32_t data_crc =
-		crc_32(algorithm->bitstream + offset + ALGO_DATA_OFFSET,
-		       usize - ALGO_DATA_OFFSET, 0xFFFFFFFF);
+	uint32_t file_crc = load_int(algorithm->bitstream + ALGO_CRC_OFFSET, 4,
+				     MP_LITTLE_ENDIAN);
+	uint32_t data_crc = crc_32(algorithm->bitstream + ALGO_DATA_OFFSET,
+				   usize - ALGO_DATA_OFFSET, 0xFFFFFFFF);
 
 	if (file_crc != data_crc) {
 		fprintf(stderr, "Corrupted %s algorithm. Bad CRC.\n",
@@ -1783,5 +2064,44 @@ int get_algorithm(device_t *device, const char *algo_path, uint8_t icsp,
 		free(algorithm->bitstream);
 		return EXIT_FAILURE;
 	}
+
+	/* T56 algorithm extraction ends here */
+	if (model == MP_T56) {
+		return EXIT_SUCCESS;
+	}
+
+	/* T76 bitstream level 2 uncompression */
+	size_t algo_size = load_int((algorithm->bitstream + ALGO_SIZE_OFFSET),
+				    4, MP_LITTLE_ENDIAN);
+
+	/* Allocate output bitstream buffer */
+	uint8_t *b_out = calloc(1, algo_size);
+	if (!b_out) {
+		free(algorithm->bitstream);
+		fprintf(stderr, "Out of memory!\n");
+		return EXIT_FAILURE;
+	}
+
+	/* Inflate bitstream by adding original zeros */
+	uint16_t *out = (uint16_t *)b_out;
+	uint16_t *in = (uint16_t *)(algorithm->bitstream + ALGO_DATA_OFFSET);
+	uint16_t *end = in + (algorithm->length - ALGO_DATA_OFFSET) / 2;
+
+	while (in < end) {
+		uint16_t val = *in++;
+		if (val) {
+			*out++ = val;
+		} else {
+			uint16_t len = *in++;
+			if (len) {
+				memset(out, 0, len * sizeof(uint16_t));
+				out += len;
+			}
+		}
+	}
+
+	free(algorithm->bitstream);
+	algorithm->bitstream = b_out;
+	algorithm->length = algo_size;
 	return EXIT_SUCCESS;
 }

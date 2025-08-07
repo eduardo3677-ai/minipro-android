@@ -22,7 +22,7 @@
 #include <stdint.h>
 #include "minipro.h"
 
-/* InfoIc2 algorithms defines */
+/* InfoIc2/Infoic76 algorithms defines */
 #define IC2_ALG_NONE		0x00
 #define IC2_ALG_IIC24C		0X01
 #define IC2_ALG_MW93ALG		0X02
@@ -38,7 +38,7 @@
 #define IC2_ALG_ROM44		0X0C
 #define IC2_ALG_EE28C32P	0X0D
 #define IC2_ALG_RAM32_1		0X0E
-#define IC2_ALG_SPI25F 		0X0F
+#define IC2_ALG_SPI25F_2 	0X0F
 #define IC2_ALG_28F32P		0X10
 #define IC2_ALG_FWH			0X11
 #define IC2_ALG_T48			0X12
@@ -79,23 +79,34 @@
 #define IC2_ALG_ITE			0X35
 
 /* T56 Utility algorithms defines */
-#define UTIL_ALG_TTL1			0x00
-#define UTIL_ALG_TTL2			0x01
-#define UTIL_ALG_PINDECT100M	0x02
-#define UTIL_ALG_STGND			0x03
-#define UTIL_ALG_STPVGI			0x04
-#define UTIL_ALG_UART_VGA		0x05
-#define UTIL_ALG_VGA_11			0x06
-#define UTIL_ALG_VGA_21			0x07
-#define UTIL_ALG_VGA1024x768	0x08
-#define UTIL_ALG_VGA1152x864	0x09
-#define UTIL_ALG_VGA1280x1024	0x0A
-#define UTIL_ALG_VGA1280x800	0x0B
-#define UTIL_ALG_VGA1440x900	0x0C
-#define UTIL_ALG_VGA1920x1080	0x0D
-#define UTIL_ALG_VGA640x480		0x0E
-#define UTIL_ALG_VGA800x600		0x0F
-#define UTIL_ALG_VGA_HDMI		0x10
+#define T56_UTIL_ALG_TTL1			0x00
+#define T56_UTIL_ALG_TTL2			0x01
+#define T56_UTIL_ALG_PINDECT100M	0x02
+#define T56_UTIL_ALG_STGND			0x03
+#define T56_UTIL_ALG_STPVGI			0x04
+#define T56_UTIL_ALG_UART_VGA		0x05
+#define T56_UTIL_ALG_VGA_11			0x06
+#define T56_UTIL_ALG_VGA_21			0x07
+#define T56_UTIL_ALG_VGA1024x768	0x08
+#define T56_UTIL_ALG_VGA1152x864	0x09
+#define T56_UTIL_ALG_VGA1280x1024	0x0A
+#define T56_UTIL_ALG_VGA1280x800	0x0B
+#define T56_UTIL_ALG_VGA1440x900	0x0C
+#define T56_UTIL_ALG_VGA1920x1080	0x0D
+#define T56_UTIL_ALG_VGA640x480		0x0E
+#define T56_UTIL_ALG_VGA800x600		0x0F
+#define T56_UTIL_ALG_VGA_HDMI		0x10
+
+/* T76 Utility algorithms defines */
+#define T76_UTIL_ALG_TEST_100M		0x00
+#define T76_UTIL_ALG_TEST_GND		0x01
+#define T76_UTIL_ALG_TEST_LGC_DOWN	0x02
+#define T76_UTIL_ALG_TEST_LGC_PULL	0x03
+#define T76_UTIL_ALG_TEST_VCC		0x04
+
+/* GAL and ATF erase firmware parameter */
+#define ERASE_PLD1 0x3D
+#define ERASE_PLD2 0x3F
 
 typedef struct fuse {
 	uint16_t mask;
@@ -129,19 +140,13 @@ typedef struct gal_config {
 	uint16_t *acw_bits;	/* acw bits order */
 } gal_config_t;
 
-typedef struct pin_map {
-	size_t gnd_count;
-	size_t mask_count;
-	uint16_t gnd_table[16];
-	uint16_t mask[40];
-} pin_map_t;
-
 typedef struct db_data {
 	const char *infoic_path;
 	const char *logicic_path;
 	const char *algo_path;
 	const char *device_name;
-	uint8_t version;
+	uint8_t db_version;
+	uint8_t prog_version;
 	uint32_t chip_id;
 	uint32_t protocol;
 	uint32_t pin_count;
@@ -150,9 +155,10 @@ typedef struct db_data {
 } db_data_t;
 
 pin_map_t *get_pin_map(db_data_t *);
-int get_algorithm(device_t *, const char *, uint8_t, uint8_t, size_t);
+int get_algorithm(device_t *, uint8_t, const char *, uint8_t, uint8_t);
 int print_chip_count(db_data_t *);
 int list_devices(db_data_t *);
 device_t *get_device_by_name(db_data_t *);
 const char *get_device_from_id(db_data_t *);
+void pack_voltages(voltages_t *voltages);
 #endif

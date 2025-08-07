@@ -24,10 +24,8 @@
 /* T48 low level functions. */
 int t48_begin_transaction(minipro_handle_t *handle);
 int t48_end_transaction(minipro_handle_t *handle);
-int t48_read_block(minipro_handle_t *handle, uint8_t type,
-			   uint32_t addr, uint8_t *buffer, size_t len);
-int t48_write_block(minipro_handle_t *handle, uint8_t type,
-			    uint32_t addr, uint8_t *buffer, size_t len);
+int t48_read_block(minipro_handle_t *handle, data_set_t *ds);
+int t48_write_block(minipro_handle_t *handle, data_set_t *ds);
 int t48_get_ovc_status(minipro_handle_t *handle,
 			       minipro_status_t *status, uint8_t *ovc);
 int t48_get_chip_id(minipro_handle_t *handle, uint8_t *type,
@@ -40,11 +38,9 @@ int t48_write_fuses(minipro_handle_t *handle, uint8_t type, size_t size,
 			    uint8_t items_count, uint8_t *buffer);
 int t48_protect_off(minipro_handle_t *handle);
 int t48_protect_on(minipro_handle_t *handle);
-int t48_erase(minipro_handle_t *handle);
-int t48_write_jedec_row(minipro_handle_t *handle, uint8_t *buffer, uint8_t row,
-			uint8_t flags, size_t size);
-int t48_read_jedec_row(minipro_handle_t *handle, uint8_t *buffer,
-			       uint8_t row, uint8_t flags, size_t size);
+int t48_erase(minipro_handle_t *handle, uint8_t num_fuses, uint8_t pld);
+int t48_write_jedec_row(minipro_handle_t *handle, jedec_set_t *js);
+int t48_read_jedec_row(minipro_handle_t *handle, jedec_set_t *js);
 int t48_logic_ic_test(minipro_handle_t *handle);
 int t48_firmware_update(minipro_handle_t *handle, const char *firmware);
 

@@ -69,10 +69,8 @@ int tl866a_protect_off(minipro_handle_t *handle);
 int tl866a_protect_on(minipro_handle_t *handle);
 int tl866a_get_ovc_status(minipro_handle_t *handle, minipro_status_t *status,
 			  uint8_t *ovc);
-int tl866a_read_block(minipro_handle_t *handle, uint8_t type, uint32_t addr,
-		      uint8_t *buffer, size_t len);
-int tl866a_write_block(minipro_handle_t *handle, uint8_t type, uint32_t addr,
-		       uint8_t *buffer, size_t len);
+int tl866a_read_block(minipro_handle_t *handle, data_set_t *ds);
+int tl866a_write_block(minipro_handle_t *handle, data_set_t *ds);
 int tl866a_get_chip_id(minipro_handle_t *handle, uint8_t *type,
 		       uint32_t *device_id);
 int tl866a_spi_autodetect(minipro_handle_t *handle, uint8_t type,
@@ -83,13 +81,11 @@ int tl866a_write_fuses(minipro_handle_t *handle, uint8_t type, size_t size,
 		       uint8_t items_count, uint8_t *buffer);
 int tl866a_read_calibration(minipro_handle_t *handle, uint8_t *buffer,
 			    size_t len);
-int tl866a_erase(minipro_handle_t *handle);
+int tl866a_erase(minipro_handle_t *handle, uint8_t num_fuses, uint8_t pld);
 int tl866a_unlock_tsop48(minipro_handle_t *handle, uint8_t *status);
 int tl866a_hardware_check(minipro_handle_t *handle);
-int tl866a_write_jedec_row(minipro_handle_t *handle, uint8_t *buffer,
-			   uint8_t row, uint8_t flags, size_t size);
-int tl866a_read_jedec_row(minipro_handle_t *handle, uint8_t *buffer,
-			  uint8_t row, uint8_t flags, size_t size);
+int tl866a_write_jedec_row(minipro_handle_t *handle, jedec_set_t *js);
+int tl866a_read_jedec_row(minipro_handle_t *handle, jedec_set_t *js);
 int tl866a_firmware_update(minipro_handle_t *handle, const char *firmware);
 int tl866a_logic_ic_test(minipro_handle_t *handle);
 int tl866a_reset_state(minipro_handle_t *);

@@ -287,71 +287,66 @@ int tl866iiplus_end_transaction(minipro_handle_t *handle)
 	return msg_send(handle->usb_handle, msg, sizeof(msg));
 }
 
-int tl866iiplus_read_block(minipro_handle_t *handle, uint8_t type,
-			   uint32_t addr, uint8_t *buf, size_t len)
+int tl866iiplus_read_block(minipro_handle_t *handle, data_set_t *ds)
 {
 	if (handle->device->flags.custom_protocol) {
-		return bb_read_block(handle, type, addr, buf, len);
+		return bb_read_block(handle, ds->type, ds->address, ds->data,
+				     ds->size);
 	}
-	uint8_t msg[64];
 
-	if (type == MP_CODE) {
-		type = TL866IIPLUS_READ_CODE;
-	} else if (type == MP_DATA) {
-		type = TL866IIPLUS_READ_DATA;
-	} else if (type == MP_USER) {
-		type = TL866IIPLUS_READ_USER_DATA;
+	uint8_t msg[64] = {0};
+	if (ds->type == MP_CODE) {
+		msg[0] = TL866IIPLUS_READ_CODE;
+	} else if (ds->type == MP_DATA) {
+		msg[0] = TL866IIPLUS_READ_DATA;
+	} else if (ds->type == MP_USER) {
+		msg[0] = TL866IIPLUS_READ_USER_DATA;
 	} else {
-		fprintf(stderr, "Unknown type for read_block (%d)\n", type);
+		fprintf(stderr, "Unknown type for read_block (%d)\n", ds->type);
 		return EXIT_FAILURE;
 	}
 
-	memset(msg, 0x00, sizeof(msg));
-	msg[0] = type;
-	format_int(&(msg[2]), len, 2, MP_LITTLE_ENDIAN);
-	format_int(&(msg[4]), addr, 4, MP_LITTLE_ENDIAN);
+	format_int(&(msg[2]), ds->size, 2, MP_LITTLE_ENDIAN);
+	format_int(&(msg[4]), ds->address, 4, MP_LITTLE_ENDIAN);
 	if (msg_send(handle->usb_handle, msg, 8))
 		return EXIT_FAILURE;
 
 	/* data_memory2 page is always read over endpoint 1 */
-	if (type == TL866IIPLUS_READ_USER_DATA)
-		return msg_recv(handle->usb_handle, buf, len);
-	return read_payload(handle->usb_handle, buf, len);
+	if (ds->type == MP_USER)
+		return msg_recv(handle->usb_handle, ds->data, ds->size);
+	return read_payload(handle->usb_handle, ds->data, ds->size);
 }
 
-int tl866iiplus_write_block(minipro_handle_t *handle, uint8_t type,
-			    uint32_t addr, uint8_t *buf, size_t len)
+int tl866iiplus_write_block(minipro_handle_t *handle, data_set_t *ds)
 {
 	if (handle->device->flags.custom_protocol) {
-		return bb_write_block(handle, type, addr, buf, len);
+		return bb_write_block(handle, ds->type, ds->address, ds->data, ds->size);
 	}
-	uint8_t msg[64];
 
-	if (type == MP_CODE) {
-		type = TL866IIPLUS_WRITE_CODE;
-	} else if (type == MP_DATA) {
-		type = TL866IIPLUS_WRITE_DATA;
-	} else if (type == MP_USER) {
-		type = TL866IIPLUS_WRITE_USER_DATA;
+	uint8_t msg[64] = { 0 };
+	if (ds->type == MP_CODE) {
+		msg[0] = TL866IIPLUS_WRITE_CODE;
+	} else if (ds->type == MP_DATA) {
+		msg[0] = TL866IIPLUS_WRITE_DATA;
+	} else if (ds->type == MP_USER) {
+		msg[0] = TL866IIPLUS_WRITE_USER_DATA;
 	} else {
-		fprintf(stderr, "Unknown type for write_block (%d)\n", type);
+		fprintf(stderr, "Unknown type for write_block (%d)\n", ds->type);
 		return EXIT_FAILURE;
 	}
 
-	memset(msg, 0x00, sizeof(msg));
-	msg[0] = type;
-	format_int(&(msg[2]), len, 2, MP_LITTLE_ENDIAN);
-	format_int(&(msg[4]), addr, 4, MP_LITTLE_ENDIAN);
-	if (len < 57) { /* If the header + payload is up to 64 bytes */
-		memcpy(&(msg[8]), buf,
-		       len); /* Send the message over the endpoint 1 */
-		if (msg_send(handle->usb_handle, msg, 8 + len))
+	format_int(&(msg[2]), ds->size, 2, MP_LITTLE_ENDIAN);
+	format_int(&(msg[4]), ds->address, 4, MP_LITTLE_ENDIAN);
+	if (ds->size < 57) { /* If the header + payload is up to 64 bytes */
+		memcpy(&(msg[8]), ds->data,
+				ds->size); /* Send the message over the endpoint 1 */
+		if (msg_send(handle->usb_handle, msg, 8 + ds->size))
 			return EXIT_FAILURE;
 	} else { /* Otherwise send only the header over the endpoint 1 */
 		if (msg_send(handle->usb_handle, msg, 8))
 			return EXIT_FAILURE;
-		if (write_payload(handle->usb_handle, buf,
-				  handle->device->write_buffer_size))
+		if (write_payload(handle->usb_handle, ds->data,
+				handle->device->write_buffer_size))
 			return EXIT_FAILURE; /* And payload to the endp.2 and 3 */
 	}
 	return EXIT_SUCCESS;
@@ -504,7 +499,7 @@ int tl866iiplus_protect_on(minipro_handle_t *handle)
 	return msg_send(handle->usb_handle, msg, sizeof(msg));
 }
 
-int tl866iiplus_erase(minipro_handle_t *handle)
+int tl866iiplus_erase(minipro_handle_t *handle, uint8_t num_fuses, uint8_t pld)
 {
 	if (handle->device->flags.custom_protocol) {
 		return bb_erase(handle);
@@ -512,12 +507,8 @@ int tl866iiplus_erase(minipro_handle_t *handle)
 	uint8_t msg[64];
 	memset(msg, 0, sizeof(msg));
 	msg[0] = TL866IIPLUS_ERASE;
-
-	fuse_decl_t *fuses = (fuse_decl_t *)handle->device->config;
-	if (!fuses || fuses->num_fuses)
-		msg[2] = 1;
-	else
-		msg[2] = (fuses->num_fuses > 4) ? 1 : fuses->num_fuses;
+	msg[2] = num_fuses;
+	msg[4] = pld;
 
 	if (msg_send(handle->usb_handle, msg, 15))
 		return EXIT_FAILURE;
@@ -576,41 +567,41 @@ int tl866iiplus_unlock_tsop48(minipro_handle_t *handle, uint8_t *status)
 	return EXIT_SUCCESS;
 }
 
-int tl866iiplus_write_jedec_row(minipro_handle_t *handle, uint8_t *buffer,
-				uint8_t row, uint8_t flags, size_t size)
+int tl866iiplus_write_jedec_row(minipro_handle_t *handle, jedec_set_t *js)
 {
 	if (handle->device->flags.custom_protocol) {
-		return bb_write_jedec_row(handle, buffer, row, flags, size);
+		return bb_write_jedec_row(handle, js->data, js->row, js->flags,
+					  js->size);
 	}
 	uint8_t msg[64];
 	memset(msg, 0, sizeof(msg));
 	msg[0] = TL866IIPLUS_WRITE_JEDEC;
 	msg[1] = handle->device->protocol_id;
-	msg[2] = size;
-	msg[4] = row;
-	msg[5] = flags;
-	memcpy(&msg[8], buffer, (size + 7) / 8);
+	msg[2] = js->size;
+	msg[4] = js->row;
+	msg[5] = js->flags;
+	memcpy(&msg[8], js->data, (js->size + 7) / 8);
 	return msg_send(handle->usb_handle, msg, 64);
 }
 
-int tl866iiplus_read_jedec_row(minipro_handle_t *handle, uint8_t *buffer,
-			       uint8_t row, uint8_t flags, size_t size)
+int tl866iiplus_read_jedec_row(minipro_handle_t *handle, jedec_set_t *js)
 {
 	if (handle->device->flags.custom_protocol) {
-		return bb_read_jedec_row(handle, buffer, row, flags, size);
+		return bb_read_jedec_row(handle, js->data, js->row, js->flags,
+					 js->size);
 	}
 	uint8_t msg[32];
 	memset(msg, 0, sizeof(msg));
 	msg[0] = TL866IIPLUS_READ_JEDEC;
 	msg[1] = handle->device->protocol_id;
-	msg[2] = size;
-	msg[4] = row;
-	msg[5] = flags;
+	msg[2] = js->size;
+	msg[4] = js->row;
+	msg[5] = js->flags;
 	if (msg_send(handle->usb_handle, msg, 8))
 		return EXIT_FAILURE;
 	if (msg_recv(handle->usb_handle, msg, 32))
 		return EXIT_FAILURE;
-	memcpy(buffer, msg, (size + 7) / 8);
+	memcpy(js->data, msg, (js->size + 7) / 8);
 	return EXIT_SUCCESS;
 }
 
@@ -965,71 +956,55 @@ int tl866iiplus_firmware_update(minipro_handle_t *handle, const char *firmware)
 	return EXIT_SUCCESS;
 }
 
-int tl866iiplus_pin_test(minipro_handle_t *handle)
+int tl866iiplus_pin_test(minipro_handle_t *handle, pin_map_t *map)
 {
-
 	/* for mapping the programmer pin numbers to the device pin numbers */
 	int p_pins = 40;
 	int d_pins = handle->device->package_details.pin_count;
 	int p_pin = 0;
 	int d_pin = 0;
-	int x_pin = d_pins/2;
-	int pno = p_pins-d_pins;
+	int x_pin = d_pins / 2;
+	int pno = p_pins - d_pins;
 
-
-	uint8_t msg[48], pins[p_pins];
-	int i;
-	db_data_t db_data;
-	memset(&db_data, 0, sizeof(db_data));
-
-	/* Get the chip pin mask for testing */
-	db_data.infoic_path = handle->cmdopts->infoic_path;
-	db_data.logicic_path = handle->cmdopts->logicic_path;
-	db_data.index = handle->device->pin_map;
-	pin_map_t *map = get_pin_map(&db_data);
-	if (!map)
-		return EXIT_FAILURE;
+	uint8_t msg[48] = { 0 }, pins[p_pins];
 
 	/* Set the desired output pins */
-	memset(msg, 0, sizeof(msg));
 	msg[0] = TL866IIPLUS_SET_DIR;
 	memset(&msg[8], 0x01, 40);
 	if (map->gnd_count) {
-		for (i = 0; i < (map->gnd_count); i++) {
+		for (int i = 0; i < (map->gnd_count); i++) {
 			msg[map->gnd_table[i] + 7] = 0;
 		}
 	}
 
-	int ret = EXIT_FAILURE;
 	/* Set the ZIF socket pins direction */
 	if (msg_send(handle->usb_handle, msg, sizeof(msg)))
-		goto cleanup;
+		return EXIT_FAILURE;
 
 	/* Set output pins to logic one */
 	msg[0] = TL866IIPLUS_SET_OUT;
 	memset(&msg[8], 0x01, 40);
 	if (msg_send(handle->usb_handle, msg, sizeof(msg)))
-		goto cleanup;
+		return EXIT_FAILURE;
 
 	/* Enable right side ZIF socket pull-up resistors */
 	msg[0] = TL866IIPLUS_SET_PULLUPS;
 	memset(&msg[28], 0x00, 20);
 	if (msg_send(handle->usb_handle, msg, sizeof(msg)))
-		goto cleanup;
+		return EXIT_FAILURE;
 
 	/* Enable left side ZIF socket pull-down resistors */
 	msg[0] = TL866IIPLUS_SET_PULLDOWNS;
 	memset(&msg[8], 0x00, 20);
 	memset(&msg[28], 0x01, 20);
 	if (msg_send(handle->usb_handle, msg, sizeof(msg)))
-		goto cleanup;
+		return EXIT_FAILURE;
 
 	/* Read ZIF socket pins and save the left side pins status */
 	msg[0] = TL866IIPLUS_READ_PINS;
-	if (msg_send(handle->usb_handle, msg, 8))
-		goto cleanup;
-	if (msg_recv(handle->usb_handle, msg, sizeof(msg)))
-		goto cleanup;
+	if (msg_send(handle->usb_handle, msg, 8) ||
+	    msg_recv(handle->usb_handle, msg, sizeof(msg)))
+		return EXIT_FAILURE;
 	memcpy(pins, &msg[8], 20);
 
 	/* Enable left side ZIF socket pull-up resistors */
@@ -1037,46 +1012,45 @@ int tl866iiplus_pin_test(minipro_handle_t *handle)
 	memset(&msg[8], 0x00, 20);
 	memset(&msg[28], 0x01, 20);
 	if (msg_send(handle->usb_handle, msg, sizeof(msg)))
-		goto cleanup;
+		return EXIT_FAILURE;
 
 	/* Enable right side ZIF socket pull-down resistors */
 	msg[0] = TL866IIPLUS_SET_PULLDOWNS;
 	memset(&msg[8], 0x01, 20);
 	memset(&msg[28], 0x00, 20);
 	if (msg_send(handle->usb_handle, msg, sizeof(msg)))
-		goto cleanup;
+		return EXIT_FAILURE;
 
 	/* Read ZIF socket pins and save the right side pins status */
 	msg[0] = TL866IIPLUS_READ_PINS;
-	if (msg_send(handle->usb_handle, msg, 8))
-		goto cleanup;
-	if (msg_recv(handle->usb_handle, msg, sizeof(msg)))
-		goto cleanup;
+	if (msg_send(handle->usb_handle, msg, 8) ||
+	    msg_recv(handle->usb_handle, msg, sizeof(msg)))
+		return EXIT_FAILURE;
 	memcpy(&pins[20], &msg[28], 20);
 
 	/* Set output pins to logic zero */
 	msg[0] = TL866IIPLUS_SET_OUT;
 	memset(&msg[8], 0x00, 40);
 	if (msg_send(handle->usb_handle, msg, sizeof(msg)))
-		goto cleanup;
+		return EXIT_FAILURE;
 
 	/* Reset ZIF socket pins direction */
 	msg[0] = TL866IIPLUS_SET_DIR;
 	memset(&msg[8], 0x01, 40);
 	if (msg_send(handle->usb_handle, msg, sizeof(msg)))
-		goto cleanup;
+		return EXIT_FAILURE;
 
 	/* Reset pull-ups */
 	msg[0] = TL866IIPLUS_SET_PULLUPS;
 	memset(&msg[8], 0x01, 40);
 	if (msg_send(handle->usb_handle, msg, sizeof(msg)))
-		goto cleanup;
+		return EXIT_FAILURE;
 
 	/* Reset pull-downs */
 	msg[0] = TL866IIPLUS_SET_PULLDOWNS;
 	memset(&msg[8], 0x00, 40);
 	if (msg_send(handle->usb_handle, msg, sizeof(msg)))
-		goto cleanup;
+		return EXIT_FAILURE;
 
 	/* End of transaction */
 	msg[0] = TL866IIPLUS_END_TRANS;
@@ -1084,24 +1058,22 @@ int tl866iiplus_pin_test(minipro_handle_t *handle)
 		return EXIT_FAILURE;
 
 	/* Now check for bad pin contact */
-	ret = EXIT_SUCCESS;
-	for (i = 0; i < map->mask_count; i++) {
-
+	int ret = EXIT_SUCCESS;
+	for (int i = 0; i < map->mask_count; i++) {
 		/* map programmer pin# to device pin# */
 		p_pin = map->mask[i];
 		d_pin = p_pin;
-		if (p_pin > x_pin) d_pin = p_pin - pno;
+		if (p_pin > x_pin)
+			d_pin = p_pin - pno;
 
 		if (!pins[p_pin - 1]) {
-			fprintf(stderr, "Bad contact on pin:%u\n",d_pin);
+			fprintf(stderr, "Bad contact on pin:%u\n", d_pin);
 			ret = EXIT_FAILURE;
 		}
 	}
 	if (!ret)
 		fprintf(stderr, "Pin test passed.\n");
 
-cleanup:
-	free(map);
 	return ret;
 }
 

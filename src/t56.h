@@ -25,26 +25,21 @@
 int t56_begin_transaction(minipro_handle_t *handle);
 int t56_end_transaction(minipro_handle_t *handle);
 int t56_get_chip_id(minipro_handle_t *handle, uint8_t *type,
-			uint32_t *device_id);
-int t56_get_ovc_status(minipro_handle_t *handle,
-			minipro_status_t *status, uint8_t *ovc);
-int t56_read_block(minipro_handle_t *handle, uint8_t type,
-			   uint32_t addr, uint8_t *buffer, size_t len);
-int t56_write_block(minipro_handle_t *handle, uint8_t type,
-			    uint32_t addr, uint8_t *buffer, size_t len);
+		    uint32_t *device_id);
+int t56_get_ovc_status(minipro_handle_t *handle, minipro_status_t *status,
+		       uint8_t *ovc);
+int t56_read_block(minipro_handle_t *handle, data_set_t *ds);
+int t56_write_block(minipro_handle_t *handle, data_set_t *ds);
 int t56_spi_autodetect(minipro_handle_t *handle, uint8_t type,
-			       uint32_t *device_id);
+		       uint32_t *device_id);
 int t56_read_fuses(minipro_handle_t *handle, uint8_t type, size_t size,
-			   uint8_t items_count, uint8_t *buffer);
+		   uint8_t items_count, uint8_t *buffer);
 int t56_write_fuses(minipro_handle_t *handle, uint8_t type, size_t size,
-			    uint8_t items_count, uint8_t *buffer);
-int t56_read_calibration(minipro_handle_t *handle, uint8_t *buffer,
-				 size_t len);
-int t56_erase(minipro_handle_t *handle);
-int t56_write_jedec_row(minipro_handle_t *handle, uint8_t *buffer, uint8_t row,
-			uint8_t flags, size_t size);
-int t56_read_jedec_row(minipro_handle_t *handle, uint8_t *buffer,
-			       uint8_t row, uint8_t flags, size_t size);
+		    uint8_t items_count, uint8_t *buffer);
+int t56_read_calibration(minipro_handle_t *handle, uint8_t *buffer, size_t len);
+int t56_erase(minipro_handle_t *handle, uint8_t num_fuses, uint8_t pld);
+int t56_write_jedec_row(minipro_handle_t *handle, jedec_set_t *js);
+int t56_read_jedec_row(minipro_handle_t *handle, jedec_set_t *js);
 int t56_protect_off(minipro_handle_t *handle);
 int t56_protect_on(minipro_handle_t *handle);
 int t56_logic_ic_test(minipro_handle_t *handle);

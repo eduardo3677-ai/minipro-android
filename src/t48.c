@@ -280,9 +280,11 @@ int t48_begin_transaction(minipro_handle_t *handle)
 		if (device->voltages.raw_voltages & 0x80000000)
 			msg[22] = (device->voltages.raw_voltages >> 16) & 0x0f;
 
-		/* SPI clock  if supported or zero */
+		/* SPI clock  if supported */
 		if (device->flags.can_adjust_clock) {
-            msg[24] = 1; // need to set it to 1 in order for byte[28] to take the desired effect
+            /* need to set it to 1 in order for byte[28] 
+               to take the desired effect */
+            msg[24] = 1;
 			msg[28] = device->spi_clock;
 		}
 
@@ -319,66 +321,61 @@ int t48_end_transaction(minipro_handle_t *handle)
 	memset(msg, 0x00, sizeof(msg));
 	msg[0] = T48_END_TRANS;
 	return msg_send(handle->usb_handle, msg, sizeof(msg));
-	return EXIT_SUCCESS;
 }
 
-int t48_read_block(minipro_handle_t *handle, uint8_t type,
-			   uint32_t addr, uint8_t *buf, size_t len)
+int t48_read_block(minipro_handle_t *handle, data_set_t *ds)
 {
 	if (handle->device->flags.custom_protocol) {
-		return bb_read_block(handle, type, addr, buf, len);
+		return bb_read_block(handle, ds->type, ds->address, ds->data,
+				     ds->size);
 	}
-	uint8_t msg[64];
 
-	if (type == MP_CODE) {
-		type = T48_READ_CODE;
-	} else if (type == MP_DATA) {
-		type = T48_READ_DATA;
-	} else if (type == MP_USER) {
-		type = T48_READ_USER_DATA;
+	uint8_t msg[64] = { 0 };
+	if (ds->type == MP_CODE) {
+		msg[0] = T48_READ_CODE;
+	} else if (ds->type == MP_DATA) {
+		msg[0] = T48_READ_DATA;
+	} else if (ds->type == MP_USER) {
+		msg[0] = T48_READ_USER_DATA;
 	} else {
-		fprintf(stderr, "Unknown type for read_block (%d)\n", type);
+		fprintf(stderr, "Unknown type for read_block (%d)\n", ds->type);
 		return EXIT_FAILURE;
 	}
 
-	memset(msg, 0x00, sizeof(msg));
-	msg[0] = type;
-	/* msg[1] = 1; */
-	format_int(&(msg[2]), len, 2, MP_LITTLE_ENDIAN);
-	format_int(&(msg[4]), addr, 4, MP_LITTLE_ENDIAN);
+	format_int(&(msg[2]), ds->size, 2, MP_LITTLE_ENDIAN);
+	format_int(&(msg[4]), ds->address, 4, MP_LITTLE_ENDIAN);
 	if (msg_send(handle->usb_handle, msg, 8))
 		return EXIT_FAILURE;
 
-	return read_payload2(handle->usb_handle, buf, len, 0);
+	return read_payload2(handle->usb_handle, ds->data, ds->size, 0);
 }
 
-int t48_write_block(minipro_handle_t *handle, uint8_t type,
-			    uint32_t addr, uint8_t *buf, size_t len)
+int t48_write_block(minipro_handle_t *handle, data_set_t *ds)
 {
 	if (handle->device->flags.custom_protocol) {
-		return bb_write_block(handle, type, addr, buf, len);
+		return bb_write_block(handle, ds->type, ds->address, ds->data,
+				      ds->size);
 	}
-	uint8_t msg[64];
 
-	if (type == MP_CODE) {
-		type = T48_WRITE_CODE;
-	} else if (type == MP_DATA) {
-		type = T48_WRITE_DATA;
-	} else if (type == MP_USER) {
-		type = T48_WRITE_USER_DATA;
+	uint8_t msg[64] = { 0 };
+	if (ds->type == MP_CODE) {
+		msg[0] = T48_WRITE_CODE;
+	} else if (ds->type == MP_DATA) {
+		msg[0] = T48_WRITE_DATA;
+	} else if (ds->type == MP_USER) {
+		msg[0] = T48_WRITE_USER_DATA;
 	} else {
-		fprintf(stderr, "Unknown type for write_block (%d)\n", type);
+		fprintf(stderr, "Unknown type for write_block (%d)\n",
+			ds->type);
 		return EXIT_FAILURE;
 	}
 
-	memset(msg, 0x00, sizeof(msg));
-	msg[0] = type;
-	format_int(&(msg[2]), len, 2, MP_LITTLE_ENDIAN);
-	format_int(&(msg[4]), addr, 4, MP_LITTLE_ENDIAN);
+	format_int(&(msg[2]), ds->size, 2, MP_LITTLE_ENDIAN);
+	format_int(&(msg[4]), ds->address, 4, MP_LITTLE_ENDIAN);
 	if (msg_send(handle->usb_handle, msg, 8))
 		return EXIT_FAILURE;
-	if (write_payload2(handle->usb_handle, buf,
-				handle->device->write_buffer_size, 0))
+	if (write_payload2(handle->usb_handle, ds->data,
+			   handle->device->write_buffer_size, 0))
 		return EXIT_FAILURE; /* And payload to the endp.2 */
 	return EXIT_SUCCESS;
 }
@@ -493,7 +490,7 @@ int t48_spi_autodetect(minipro_handle_t *handle, uint8_t type,
 	return EXIT_SUCCESS;
 }
 
-int t48_erase(minipro_handle_t *handle)
+int t48_erase(minipro_handle_t *handle, uint8_t num_fuses, uint8_t pld)
 {
 	if (handle->device->flags.custom_protocol) {
 		return bb_erase(handle);
@@ -501,12 +498,8 @@ int t48_erase(minipro_handle_t *handle)
 	uint8_t msg[64];
 	memset(msg, 0, sizeof(msg));
 	msg[0] = T48_ERASE;
-
-	fuse_decl_t *fuses = (fuse_decl_t *)handle->device->config;
-	if (!fuses || fuses->num_fuses)
-		msg[2] = 1;
-	else
-		msg[2] = (fuses->num_fuses > 4) ? 1 : fuses->num_fuses;
+	msg[2] = num_fuses;
+	msg[4] = pld;
 
 	if (msg_send(handle->usb_handle, msg, 15))
 		return EXIT_FAILURE;
@@ -551,43 +544,41 @@ int t48_get_ovc_status(minipro_handle_t *handle,
 	return EXIT_SUCCESS;
 }
 
-int t48_write_jedec_row(minipro_handle_t *handle, uint8_t *buffer,
-				uint8_t row, uint8_t flags, size_t size)
+int t48_write_jedec_row(minipro_handle_t *handle, jedec_set_t *js)
 {
 	/* Warning: Using JEDEC algorithm for TL866ii+. Results in T48 may be unexpected */
 	if (handle->device->flags.custom_protocol) {
-		return bb_write_jedec_row(handle, buffer, row, flags, size);
+		return bb_write_jedec_row(handle, js->data, js->row, js->flags, js->size);
 	}
 	uint8_t msg[64];
 	memset(msg, 0, sizeof(msg));
 	msg[0] = T48_WRITE_JEDEC;
 	msg[1] = handle->device->protocol_id;
-	msg[2] = size;
-	msg[4] = row;
-	msg[5] = flags;
-	memcpy(&msg[8], buffer, (size + 7) / 8);
+	msg[2] = js->size;
+	msg[4] = js->row;
+	msg[5] = js->flags;
+	memcpy(&msg[8], js->data, (js->size + 7) / 8);
 	return msg_send(handle->usb_handle, msg, 64);
 }
 
-int t48_read_jedec_row(minipro_handle_t *handle, uint8_t *buffer,
-			       uint8_t row, uint8_t flags, size_t size)
+int t48_read_jedec_row(minipro_handle_t *handle, jedec_set_t *js)
 {
 	/* Warning: Using JEDEC algorithm for TL866ii+. Results in T48 may be unexpected */
 	if (handle->device->flags.custom_protocol) {
-		return bb_read_jedec_row(handle, buffer, row, flags, size);
+		return bb_read_jedec_row(handle, js->data, js->row, js->flags, js->size);
 	}
 	uint8_t msg[32];
 	memset(msg, 0, sizeof(msg));
 	msg[0] = T48_READ_JEDEC;
 	msg[1] = handle->device->protocol_id;
-	msg[2] = size;
-	msg[4] = row;
-	msg[5] = flags;
+	msg[2] = js->size;
+	msg[4] = js->row;
+	msg[5] = js->flags;
 	if (msg_send(handle->usb_handle, msg, 8))
 		return EXIT_FAILURE;
 	if (msg_recv(handle->usb_handle, msg, 32))
 		return EXIT_FAILURE;
-	memcpy(buffer, msg, (size + 7) / 8);
+	memcpy(js->data, msg, (js->size + 7) / 8);
 	return EXIT_SUCCESS;
 }
 

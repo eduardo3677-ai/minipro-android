@@ -291,58 +291,62 @@ int tl866a_end_transaction(minipro_handle_t *handle)
 	return msg_send(handle->usb_handle, msg, 4);
 }
 
-int tl866a_read_block(minipro_handle_t *handle, uint8_t type, uint32_t addr,
-		      uint8_t *buffer, size_t size)
+int tl866a_read_block(minipro_handle_t *handle, data_set_t *ds)
 {
 	if (handle->device->flags.custom_protocol) {
-		return bb_read_block(handle, type, addr, buffer, size);
+		return bb_read_block(handle, ds->type, ds->address, ds->data,
+				     ds->size);
 	}
-	if (type == MP_CODE) {
+
+	uint8_t type;
+	if (ds->type == MP_CODE) {
 		type = TL866A_READ_CODE;
-	} else if (type == MP_DATA) {
+	} else if (ds->type == MP_DATA) {
 		type = TL866A_READ_DATA;
-	} else if (type == MP_USER) {
+	} else if (ds->type == MP_USER) {
 		type = TL866A_READ_USER_DATA;
 	} else {
-		fprintf(stderr, "Unknown type for read_block (%d)\n", type);
+		fprintf(stderr, "Unknown type for read_block (%d)\n", ds->type);
 		return EXIT_FAILURE;
 	}
 	uint8_t msg[64];
 	msg_init(handle, type, msg, sizeof(msg));
-	format_int(&(msg[2]), size, 2, MP_LITTLE_ENDIAN);
-	format_int(&(msg[4]), addr, 3, MP_LITTLE_ENDIAN);
+	format_int(&(msg[2]), ds->size, 2, MP_LITTLE_ENDIAN);
+	format_int(&(msg[4]), ds->address, 3, MP_LITTLE_ENDIAN);
 	if (msg_send(handle->usb_handle, msg, 18))
 		return EXIT_FAILURE;
-	return msg_recv(handle->usb_handle, buffer, size);
+	return msg_recv(handle->usb_handle, ds->data, ds->size);
 }
 
-int tl866a_write_block(minipro_handle_t *handle, uint8_t type, uint32_t addr,
-		       uint8_t *buffer, size_t size)
+int tl866a_write_block(minipro_handle_t *handle, data_set_t *ds)
 {
 	if (handle->device->flags.custom_protocol) {
-		return bb_write_block(handle, type, addr, buffer, size);
+		return bb_write_block(handle, ds->type, ds->address, ds->data,
+				      ds->size);
 	}
-	if (type == MP_CODE) {
+
+	uint8_t type;
+	if (ds->type == MP_CODE) {
 		type = TL866A_WRITE_CODE;
-	} else if (type == MP_DATA) {
+	} else if (ds->type == MP_DATA) {
 		type = TL866A_WRITE_DATA;
-	} else if (type == MP_USER) {
+	} else if (ds->type == MP_USER) {
 		type = TL866A_WRITE_USER_DATA;
 	} else {
-		fprintf(stderr, "Unknown type for read_block (%d)\n", type);
+		fprintf(stderr, "Unknown type for write_block (%d)\n", ds->type);
 		return EXIT_FAILURE;
 	}
 
-	uint8_t *msg = malloc(size + 7);
+	uint8_t *msg = malloc(ds->size + 7);
 	if (!msg) {
 		fprintf(stderr, "Out of memory!");
 		return EXIT_FAILURE;
 	}
-	msg_init(handle, type, msg, sizeof(size + 7));
-	format_int(&(msg[2]), size, 2, MP_LITTLE_ENDIAN);
-	format_int(&(msg[4]), addr, 3, MP_LITTLE_ENDIAN);
-	memcpy(&(msg[7]), buffer, size);
-	if (msg_send(handle->usb_handle, msg, size + 7)) {
+	msg_init(handle, type, msg, sizeof(ds->size + 7));
+	format_int(&(msg[2]), ds->size, 2, MP_LITTLE_ENDIAN);
+	format_int(&(msg[4]), ds->address, 3, MP_LITTLE_ENDIAN);
+	memcpy(&(msg[7]), ds->data, ds->size);
+	if (msg_send(handle->usb_handle, msg, ds->size + 7)) {
 		free(msg);
 		return EXIT_FAILURE;
 	}
@@ -483,16 +487,11 @@ int tl866a_protect_on(minipro_handle_t *handle)
 	return msg_send(handle->usb_handle, msg, 10);
 }
 
-int tl866a_erase(minipro_handle_t *handle)
+int tl866a_erase(minipro_handle_t *handle, uint8_t num_fuses, uint8_t pld)
 {
 	uint8_t msg[64];
 	msg_init(handle, TL866A_ERASE, msg, sizeof(msg));
-
-	fuse_decl_t *fuses = (fuse_decl_t *)handle->device->config;
-	if (!fuses || fuses->num_fuses)
-		msg[2] = 1;
-	else
-		msg[2] = (fuses->num_fuses > 4) ? 1 : fuses->num_fuses;
+	msg[2] = num_fuses;
 
 	if (msg_send(handle->usb_handle, msg, 15))
 		return EXIT_FAILURE;
@@ -551,41 +550,41 @@ int tl866a_unlock_tsop48(minipro_handle_t *handle, uint8_t *status)
 	return EXIT_SUCCESS;
 }
 
-int tl866a_write_jedec_row(minipro_handle_t *handle, uint8_t *buffer,
-			   uint8_t row, uint8_t flags, size_t size)
+int tl866a_write_jedec_row(minipro_handle_t *handle, jedec_set_t *js)
 {
 	if (handle->device->flags.custom_protocol) {
-		return bb_write_jedec_row(handle, buffer, row, flags, size);
+		return bb_write_jedec_row(handle, js->data, js->row, js->flags,
+					  js->size);
 	}
 	uint8_t msg[64];
 	memset(msg, 0, sizeof(msg));
 	msg[0] = TL866A_WRITE_CODE;
 	msg[1] = handle->device->protocol_id;
-	msg[2] = size;
-	msg[4] = row;
-	msg[5] = flags;
-	memcpy(&msg[7], buffer, (size + 7) / 8);
+	msg[2] = js->size;
+	msg[4] = js->row;
+	msg[5] = js->flags;
+	memcpy(&msg[7], js->data, (js->size + 7) / 8);
 	return msg_send(handle->usb_handle, msg, 64);
 }
 
-int tl866a_read_jedec_row(minipro_handle_t *handle, uint8_t *buffer,
-			  uint8_t row, uint8_t flags, size_t size)
+int tl866a_read_jedec_row(minipro_handle_t *handle, jedec_set_t *js)
 {
 	if (handle->device->flags.custom_protocol) {
-		return bb_read_jedec_row(handle, buffer, row, flags, size);
+		return bb_read_jedec_row(handle, js->data, js->row, js->flags,
+					 js->size);
 	}
 	uint8_t msg[64];
 	memset(msg, 0, sizeof(msg));
 	msg[0] = TL866A_READ_CODE;
 	msg[1] = handle->device->protocol_id;
-	msg[2] = size;
-	msg[4] = row;
-	msg[5] = flags;
+	msg[2] = js->size;
+	msg[4] = js->row;
+	msg[5] = js->flags;
 	if (msg_send(handle->usb_handle, msg, 18))
 		return EXIT_FAILURE;
 	if (msg_recv(handle->usb_handle, msg, sizeof(msg)))
 		return EXIT_FAILURE;
-	memcpy(buffer, msg, (size + 7) / 8);
+	memcpy(js->data, msg, (js->size + 7) / 8);
 	return EXIT_SUCCESS;
 }
 
@@ -1286,7 +1285,7 @@ static int pwr_init(minipro_handle_t *handle, uint8_t *vector, size_t pin_count)
 					      sizeof(gnd_pins) /
 						      sizeof(gnd_pins[0]));
 			if (!pwr_pin) {
-				fprintf(stderr, "Pin %zu not supported for GND on TL866A/CS!\n", i + 1);
+				fprintf(stderr, "Pin %lu not supported for GND on TL866A/CS!\n", i + 1);
 				return EXIT_FAILURE;
 			}
 			pwr[(pwr_pin->latch - 2) * 2 + 10] |= pwr_pin->mask;
@@ -1295,7 +1294,7 @@ static int pwr_init(minipro_handle_t *handle, uint8_t *vector, size_t pin_count)
 					      sizeof(vcc_pins) /
 						      sizeof(vcc_pins[0]));
 			if (!pwr_pin) {
-				fprintf(stderr, "Pin %zu not supported for VCC on TL866A/CS!\n", i + 1);
+				fprintf(stderr, "Pin %lu not supported for VCC on TL866A/CS!\n", i + 1);
 				return EXIT_FAILURE;
 			}
 			pwr[(pwr_pin->latch - 2) * 2 + 10] &= pwr_pin->mask;
@@ -1310,14 +1309,18 @@ static uint8_t *do_ic_test(minipro_handle_t *handle)
 	uint8_t pin_count = handle->device->package_details.pin_count;
 	uint8_t *result = calloc(pin_count, handle->device->vector_count);
 
-	if (!result)
+	if (!result){
 		return NULL;
+	}
 
 	if (handle->device->vector_count == 0) {
+		fprintf(stderr, "Out of memory!\n");
+		free(result);
 		return NULL;
 	}
 
 	if (pwr_init(handle, handle->device->vectors, pin_count)) {
+		free(result);
 		return NULL;
 	}
 

@@ -45,8 +45,6 @@
 #define STRCASESTR strcasestr
 #endif
 
-#define VPP_VOLTAGE	 0
-#define VCC_VOLTAGE	 1
 
 #define READ_BUFFER_SIZE 65536
 #define MIN(a, b)	 (((a) < (b)) ? (a) : (b))
@@ -56,126 +54,14 @@ static const char *user_id[] = {
 	"user_id4", "user_id5", "user_id6", "user_id7"
 };
 
-static struct voltage_s {
-	const char *name;
-	uint8_t value;
-} tl866a_vpp_voltages[] = { { "10", 0x40 }, { "12.5", 0x00 }, { "13.5", 0x30 },
-			    { "14", 0x50 }, { "16", 0x10 },   { "17", 0x70 },
-			    { "18", 0x60 }, { "21", 0x20 },   { NULL, 0x00 } },
-  tl866a_vcc_voltages[] = { { "3.3", 0x02 }, { "4", 0x01 },   { "4.5", 0x05 },
-			    { "5", 0x00 },   { "5.5", 0x04 }, { "6.5", 0x03 },
-			    { NULL, 0x00 } },
-  tl866ii_vpp_voltages[] = { { "9", 0x10 },    { "9.5", 0x20 },
-			     { "10", 0x30 },   { "11", 0x40 },
-			     { "11.5", 0x50 }, { "12", 0x00 },
-			     { "12.5", 0x60 }, { "13", 0x70 },
-			     { "13.5", 0x80 }, { "14", 0x90 },
-			     { "14.5", 0xa0 }, { "15.5", 0xb0 },
-			     { "16", 0xc0 },   { "16.5", 0xd0 },
-			     { "17", 0xe0 },   { "18", 0xf0 },
-			     { NULL, 0x00 } },
-  tl866ii_vcc_voltages[] = { { "3.3", 0x01 }, { "4", 0x02 },   { "4.5", 0x03 },
-			     { "5", 0x00 },   { "5.5", 0x04 }, { "6.5", 0x05 },
-			     { NULL, 0x00 } },
-  t48_vcc_voltages[] = { { "3.3", 0x01 }, { "4", 0x02 },   { "4.5", 0x03 },
-			     { "5", 0x00 },   { "5.5", 0x04 }, { "6.5", 0x05 },
-			     { NULL, 0x00 } },
-  t48_vpp_voltages[] = { { "9", 0x10 },    { "9.5", 0x20 },
-			     { "10", 0x30 },   { "11", 0x40 },
-			     { "11.5", 0x50 }, { "12", 0x00 },
-			     { "12.5", 0x60 }, { "13", 0x70 },
-			     { "13.5", 0x80 }, { "14", 0x90 },
-			     { "14.5", 0xa0 }, { "15.5", 0xb0 },
-			     { "16", 0xc0 },   { "16.5", 0xd0 },
-			     { "17", 0xe0 },   { "18", 0xf0 },
-			     { "21", 0xf2 },   { "25", 0xf1 },
-			     { NULL, 0x00 } },
-  logic_voltages[] = { { "5", 0x00 },
-		       { "3.3", 0x01 },
-		       { "2.5", 0x02 },
-		       { "1.8", 0x03 },
-		       { NULL, 0x00 } },
-  t48_custom_vcc_voltages[] = { { "1.75", 0x01 },
-                         { "1.8",  0x02 },
-                         { "1.9",  0x03 },
-                         { "2",  0x04 },
-                         { "2.1",  0x05 },
-                         { "2.2",  0x06 },
-                         { "2.3",  0x08 },
-                         { "2.4",  0x09 },
-                         { "2.5",  0x0a },
-                         { "2.6",  0x0b },
-                         { "2.7",  0x0d },
-                         { "2.8",  0x0e },
-                         { "2.9",  0x0f },
-                         { "3",  0x10 },
-                         { "3.3",  0x14 },
-                         { "3.5",  0x16 },
-                         { "3.7",  0x18 },
-                         { "3.8",  0x1a },
-                         { "4",  0x1c },
-                         { "4.2",  0x1e },
-                         { "4.3",  0x20 },
-                         { "4.4",  0x21 },
-                         { "4.5",  0x22 },
-                         { "4.7",  0x25 },
-                         { "4.8",  0x26 },
-                         { "4.9",  0x27 },
-                         { "5",  0x28 },
-                         { "5.2",  0x2b },
-                         { "5.3",  0x2c },
-                         { "5.4",  0x2d },
-                         { "5.5",  0x2f },
-                         { "5.6",  0x30 },
-                         { "5.7",  0x31 },
-                         { "5.8",  0x32 },
-                         { "5.9",  0x33 },
-                         { "6",  0x34 },
-                         { "6.1",  0x35 },
-                         { "6.2",  0x36 },
-                         { "6.3",  0x38 },
-                         { "6.5",  0x3b },
-                         { "6.6",  0x3c },
-                         { "6.7",  0x3d },
-                         { "6.8",  0x3e },
-                         { "6.9",  0x3f },
-                         { NULL, 0x00 } },
-  t48_custom_vpp_voltages[] = { { "9", 0x00 },
-                         { "9.5", 0x01 },
-                         { "10", 0x03 },
-                         { "11", 0x07 },
-                         { "11.5", 0x09 },
-                         { "12", 0x0b },
-                         { "12.5", 0x0d },
-                         { "13", 0x0e },
-                         { "13.5", 0x11 },
-                         { "14", 0x13 },
-                         { "14.5", 0x15 },
-                         { "15.5", 0x18 },
-                         { "16", 0x1a },
-                         { "16.5", 0x1c },
-                         { "17", 0x1e },
-                         { "18", 0x23 },
-                         { "21", 0x2f },
-                         { "25", 0x3e },
-                         { NULL, 0x00 } };
-
-static struct spi_speed_s {
-	const char *name;
-	uint8_t value;
-} t48_spi_speeds[] = {
-			{ "3", 0x0 }, { "3.0", 0x00 },
-			{ "7.5", 0x01 },
-			{ "15", 0x02 }, { "15.0", 0x02 },
-			{ "30", 0x03 }, { "30.0", 0x03 },
-			{ NULL, 0x00 } };
-
+/* Long options names */
 static struct option long_options[] = {
 	{ "pulse", required_argument, NULL, 2 },
 	{ "vpp", required_argument, NULL, 2 },
 	{ "vdd", required_argument, NULL, 2 },
 	{ "vcc", required_argument, NULL, 2 },
-	{ "speed", required_argument, NULL, 2},
+	{ "spi_clock", required_argument, NULL, 2 },
+	{ "address", required_argument, NULL, 2 },
 	{ "fuses", no_argument, NULL, 1 },
 	{ "uid", no_argument, NULL, 1 },
 	{ "lock", no_argument, NULL, 1 },
@@ -218,12 +104,201 @@ static struct option long_options[] = {
 	{ NULL, 0, NULL, 0 }
 };
 
+#define SEP "----------------------------------------"
+#define INFO "---------------Chip Info----------------"
 static char signon[] = "minipro version %s     A free and open TL866 series programmer\n";
 
+
+/* Get the connected programmer version */
+int get_programmer_version(uint8_t *version)
+{
+	if (!(minipro_get_devices_count(MP_TL866A) +
+	      minipro_get_devices_count(MP_TL866IIPLUS)+
+		  minipro_get_devices_count(MP_T76))) {
+		if (!(*version)) {
+			fprintf(stderr,
+				"No device found. Which database do you want to display?\n1) "
+				"TL866A/CS\n2) TL866II+/T48/T56\n3) T76\n4) Abort\n");
+			fflush(stderr);
+			char c = getchar();
+			switch (c) {
+			case '1':
+				*version = MP_TL866A;
+				break;
+			case '2':
+				*version = MP_TL866IIPLUS;
+				break;
+			case '3':
+				*version = MP_T76;
+				break;
+			default:
+				fprintf(stderr, "Aborted.\n");
+				return EXIT_FAILURE;
+			}
+		}
+	} else if (!(*version)) {
+		minipro_handle_t *tmp = minipro_open(VERBOSE);
+		if (!tmp) {
+			return EXIT_FAILURE;
+		}
+		minipro_print_system_info(tmp);
+		fflush(stderr);
+		*version = tmp->version;
+		minipro_close(tmp);
+	}
+	return EXIT_SUCCESS;
+}
+
+/* Search the database xml and return a device_t structure */
+int get_device(minipro_handle_t *handle)
+{
+	db_data_t db_data;
+	memset(&db_data, 0, sizeof(db_data));
+	db_data.device_name = handle->cmdopts->device_name;
+	db_data.logicic_path = handle->cmdopts->logicic_path;
+	db_data.infoic_path = handle->cmdopts->infoic_path;
+	db_data.prog_version = handle->version;
+	handle->device = get_device_by_name(&db_data);
+	if (!handle->device) {
+		fprintf(stderr, "\nDevice %s not found!\n",
+			handle->cmdopts->device_name);
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
+/* Get the required parameters table */
+const parameters_t *get_parameter_struct(device_t *device, uint8_t type)
+{
+	/* Switch by parameter type */
+	switch (type) {
+	case VPP_VOLTAGE:
+		return device->vpp_table;
+	case VCC_VOLTAGE:
+		return device->vcc_table;
+	case VPP_BB_VOLTAGE:
+		return device->bb_vpp_table;
+	case VCC_BB_VOLTAGE:
+		return device->bb_vpp_table;
+	case LOGIC_VOLTAGE:
+		return device->vcc_logic_table;
+	case SPI_CLOCK:
+		return device->spi_clock_table;
+	default:
+		return NULL;
+	}
+}
+
+/* Get a parameter string from an integer value */
+const char *get_parameter(minipro_handle_t *handle, uint8_t value, uint8_t type)
+{
+	const parameters_t *table = get_parameter_struct(handle->device, type);
+	while (table != NULL && table->name) {
+		if (table->value == value) {
+			return table->name;
+		}
+		table++;
+	}
+	return "-";
+}
+
+/* Get an integer value from a string parameter name */
+int set_parameter(minipro_handle_t *handle, char *value, uint8_t *target,
+		  uint8_t type)
+{
+	const parameters_t *table = get_parameter_struct(handle->device, type);
+	while (table != NULL && table->name) {
+		if (!strcasecmp(table->name, value)) {
+			*target = table->value;
+			return EXIT_SUCCESS;
+		}
+		table++;
+	}
+	return EXIT_FAILURE;
+}
+
+/* Helper function to dump a parameter table to console */
+void print_parameters_table(const char *msg, const parameters_t *table)
+{
+	int wrap = strlen(msg);
+	fprintf(stderr, "%s", msg);
+	while (table->name != NULL) {
+		const char *name = table->name;
+		int len = strlen(name);
+		int next = (table + 1)->name != NULL;
+		int extra = next ? 2 : 0;
+		if (wrap + len + extra > 40) {
+			fprintf(stderr, "\n");
+			wrap = 0;
+		}
+		fprintf(stderr, "%s", name);
+		if (next) {
+			fprintf(stderr, ", ");
+			wrap += len + 2;
+		} else {
+			wrap += len;
+		}
+		table++;
+	}
+	fprintf(stderr, "\n");
+}
+
+/* Print programming options */
+void print_options(minipro_handle_t *handle)
+{
+	device_t *device = handle->device;
+	uint8_t bb = device->flags.custom_protocol;
+
+	/* Print SPI clock if supported */
+	if (device->flags.can_adjust_clock) {
+		fprintf(stderr, "SPI Clock: %s MHz\n",
+			get_parameter(handle, device->spi_clock, SPI_CLOCK));
+	} else if (handle->cmdopts->set_spi_clock) {
+		fprintf(stderr,
+			"WARNING: Adjusting the SPI clock is not supported on this programmer!\n");
+	}
+
+	/* Print I2C slave address if supported */
+	if (device->flags.can_adjust_address) {
+		fprintf(stderr, "I2C slave address: 0x%02X\n",
+			device->i2c_address);
+	} else if (handle->cmdopts->set_i2c_addr) {
+		fprintf(stderr,
+			"WARNING: Changing the I2C slave address is not supported on this programmer!\n");
+	}
+
+	if (handle->cmdopts->action != WRITE || (!device->flags.can_adjust_vcc &&
+	    !device->flags.can_adjust_vpp)) {
+		return;
+	}
+
+	/* Print VPP */
+	fprintf(stderr, "VPP: %s V",
+		get_parameter(handle, device->voltages.vpp,
+			      bb ? VPP_BB_VOLTAGE : VPP_VOLTAGE));
+
+	/* Print VDD */
+	if (handle->device->flags.can_adjust_vcc) {
+		fprintf(stderr, ", VDD: %s V, ",
+			get_parameter(handle, device->voltages.vdd,
+				      bb ? VCC_BB_VOLTAGE : VCC_VOLTAGE));
+
+		/* Print VCC */
+		fprintf(stderr, "VCC: %s V, ",
+			get_parameter(handle, device->voltages.vcc,
+				      bb ? VCC_BB_VOLTAGE : VCC_VOLTAGE));
+
+		/* Print pulse delay */
+		fprintf(stderr, "Pulse: %u us\n", handle->device->pulse_delay);
+	}
+	fprintf(stderr, "\n");
+}
+
+/* Print the minipro info (-v option) */
 void print_version_and_exit(cmdopts_t *cmdopts)
 {
 	fprintf(stderr, "Supported programmers: TL866A/CS, TL866II+, ");
-	fprintf(stderr, "T48, T56\n");
+	fprintf(stderr, "T48, T56, T76\n");
 	minipro_handle_t *handle = minipro_open(VERBOSE);
 	if (handle != NULL) {
 		minipro_print_system_info(handle);
@@ -258,52 +333,20 @@ void print_help_and_exit(char *progname)
 	exit(EXIT_FAILURE);
 }
 
-int get_programmer_version(uint8_t *version)
-{
-	if (!(minipro_get_devices_count(MP_TL866A) +
-	      minipro_get_devices_count(MP_TL866IIPLUS))) {
-		if (!(*version)) {
-			fprintf(stderr,
-				"No device found. Which database do you want to display?\n1) "
-				"TL866A/CS\n2) TL866II+/T48/T56\n3) Abort\n");
-			fflush(stderr);
-			char c = getchar();
-			switch (c) {
-			case '1':
-				*version = MP_TL866A;
-				break;
-			case '2':
-				*version = MP_TL866IIPLUS;
-				break;
-			default:
-				fprintf(stderr, "Aborted.\n");
-				return EXIT_FAILURE;
-			}
-		}
-	} else if (!(*version)) {
-		minipro_handle_t *tmp = minipro_open(VERBOSE);
-		if (!tmp) {
-			return EXIT_FAILURE;
-		}
-		minipro_print_system_info(tmp);
-		fflush(stderr);
-		*version = tmp->version;
-		minipro_close(tmp);
-	}
-	return EXIT_SUCCESS;
-}
-
-void print_supported_programmers_and_exit(cmdopts_t *cmdopts)
+/* Print supported programmers (-Q) */
+void print_supported_programmers_and_exit()
 {
 	fprintf(stderr, "tl866a:  TL866CS/A\n"
 			"tl866ii: TL866II+\n"
 			"t48:     T48  (mostly complete)\n"
 			"t56:     T56  (experimental)\n"
+			"t76:     T76  (experimental)\n"
 			);
 	exit(EXIT_SUCCESS);
 }
 
-void print_connected_programmer_and_exit(cmdopts_t *cmdopts)
+/* Print connected programmer version (-k) */
+void print_connected_programmer_and_exit()
 {
 	minipro_handle_t *handle = minipro_open(NO_VERBOSE);
 	if (!handle) {
@@ -325,6 +368,9 @@ void print_connected_programmer_and_exit(cmdopts_t *cmdopts)
 		case MP_T56:
 			fprintf(stderr, "t56: T56\n");
 			break;
+		case MP_T76:
+			fprintf(stderr, "t76: T76\n");
+			break;
 		default:
 			fprintf(stderr, "[Unknown programmer version]\n");
 		}
@@ -333,6 +379,7 @@ void print_connected_programmer_and_exit(cmdopts_t *cmdopts)
 	exit(EXIT_SUCCESS);
 }
 
+/* List database devices. (-l and -L */
 void print_devices_and_exit(cmdopts_t *cmdopts)
 {
 	db_data_t db_data;
@@ -340,8 +387,8 @@ void print_devices_and_exit(cmdopts_t *cmdopts)
 	db_data.device_name = cmdopts->device_name;
 	db_data.logicic_path = cmdopts->logicic_path;
 	db_data.infoic_path = cmdopts->infoic_path;
-	db_data.version = cmdopts->version;
-	if (get_programmer_version(&db_data.version))
+	db_data.prog_version = cmdopts->version;
+	if (get_programmer_version(&db_data.prog_version))
 		exit(EXIT_FAILURE);
 
 	/* If less is available under windows use it, otherwise just use more. */
@@ -380,390 +427,7 @@ void print_devices_and_exit(cmdopts_t *cmdopts)
 	exit(EXIT_SUCCESS);
 }
 
-static struct voltage_s *get_vpp_voltages(minipro_handle_t *handle)
-{
-	switch (handle->version) {
-	case MP_TL866A:
-	case MP_TL866CS:
-		return tl866a_vpp_voltages;
-		break;
-	case MP_TL866IIPLUS:
-		return tl866ii_vpp_voltages;
-		break;
-	case MP_T48:
-		if (handle->device->flags.custom_protocol)
-			return t48_custom_vpp_voltages;
-		else
-			return t48_vpp_voltages;
-		break;
-	case MP_T56:
-		return t48_vpp_voltages;
-		break;
-	}
-	return NULL;
-}
-
-static struct voltage_s *get_vcc_voltages(minipro_handle_t *handle)
-{
-	switch (handle->version) {
-	case MP_TL866A:
-	case MP_TL866CS:
-		return tl866a_vcc_voltages;
-		break;
-	case MP_TL866IIPLUS:
-		return tl866ii_vcc_voltages;
-		break;
-	case MP_T48:
-		if (handle->device->flags.custom_protocol)
-			return t48_custom_vcc_voltages;
-		else
-			return t48_vcc_voltages;
-		break;
-	case MP_T56:
-		return t48_vcc_voltages;
-		break;
-	}
-	return NULL;
-}
-
-/* Get a voltage string from an integer */
-const char *get_voltage(minipro_handle_t *handle, uint8_t value, uint8_t type)
-{
-	struct voltage_s *voltage = NULL;
-
-	if (type == VPP_VOLTAGE) {
-		voltage = get_vpp_voltages(handle);
-	} else if (handle->device->chip_type == MP_LOGIC) {
-		voltage = logic_voltages;
-	} else {
-		voltage = get_vcc_voltages(handle);
-	}
-
-	while (voltage->name) {
-		if (voltage->value == value) {
-			return voltage->name;
-		}
-		voltage++;
-	}
-	return "-";
-}
-
-/* Get an integer from a string voltage name */
-int set_voltage(minipro_handle_t *handle, char *value, uint8_t *target,
-		uint8_t type)
-{
-	struct voltage_s *voltage = NULL;
-
-	if (type == VPP_VOLTAGE) {
-		voltage = get_vpp_voltages(handle);
-	} else if (handle->device->chip_type == MP_LOGIC) {
-		voltage = logic_voltages;
-	} else {
-		voltage = get_vcc_voltages(handle);
-	}
-	while (voltage->name) {
-		if (!strcasecmp(voltage->name, value)) {
-			*target = voltage->value;
-			return EXIT_SUCCESS;
-		}
-		voltage++;
-	}
-	return EXIT_FAILURE;
-}
-
-int set_spi_speed(minipro_handle_t *handle, char *value, uint8_t *spi_speed) 
-{
-	struct spi_speed_s *speed = t48_spi_speeds;
-	while (speed->name) {
-		if (!strcasecmp(speed->name, value)) {
-			*spi_speed = speed->value;
-			return EXIT_SUCCESS;
-		}
-		speed++;
-	}
-	return EXIT_FAILURE;
-}
-
-int get_device(minipro_handle_t *handle)
-{
-	db_data_t db_data;
-	memset(&db_data, 0, sizeof(db_data));
-	db_data.device_name = handle->cmdopts->device_name;
-	db_data.logicic_path = handle->cmdopts->logicic_path;
-	db_data.infoic_path = handle->cmdopts->infoic_path;
-	db_data.version = handle->version;
-	handle->device = get_device_by_name(&db_data);
-	if (!handle->device) {
-		fprintf(stderr, "Device %s not found!\n",
-			handle->cmdopts->device_name);
-		return EXIT_FAILURE;
-	}
-	return EXIT_SUCCESS;
-}
-
-void print_device_info_and_exit(cmdopts_t *cmdopts)
-{
-	minipro_handle_t *handle = calloc(1, sizeof(minipro_handle_t));
-	if (!handle) {
-		fprintf(stderr, "Out of memory!\n");
-	}
-	handle->cmdopts = cmdopts;
-	handle->version = cmdopts->version;
-	if (get_programmer_version(&handle->version))
-		exit(EXIT_FAILURE);
-	if (get_device(handle)) {
-		minipro_close(handle);
-		exit(EXIT_FAILURE);
-	}
-	device_t *device = handle->device;
-
-	fprintf(stderr, "Name: %s\n", device->name);
-
-	if (device->chip_type == MP_LOGIC) {
-		fprintf(stderr,
-			"Package:\t DIP%d\nVCC voltage:\t %sV\nVector count:\t %d\n",
-			device->package_details.pin_count,
-			get_voltage(handle, device->voltages.vcc, VCC_VOLTAGE),
-			device->vector_count);
-
-	} else {
-		/* Availability */
-		fprintf(stderr, "Available on: ");
-		if (handle->version != MP_TL866IIPLUS) {
-			fprintf(stderr, "TL866A/CS\n");
-		} else {
-			int c = 0;
-			int all = (!device->tl866_only && !device->t48_only &&
-				   !device->t56_only);
-			if (all || device->tl866_only){
-				fprintf(stderr, "TL866II");
-				c++;
-			}
-			if (all || device->t48_only){
-				fprintf(stderr, "%sT48", c ? ", " : "");
-				c++;
-			}
-			if (all || device->t56_only){
-				fprintf(stderr, "%sT56", c ? ", " : "");
-				c++;
-			}
-			fprintf(stderr, "%s\n", --c ? "" : " only");
-		}
-		/* Memory shape */
-		fprintf(stderr, "Memory: %u",
-			device->code_memory_size / device->flags.word_size);
-		switch (device->flags.data_org) {
-		case 0:
-			fprintf(stderr, " Bytes");
-			break;
-		case 1:
-			fprintf(stderr, " Words");
-			break;
-		case 2:
-			fprintf(stderr, " Bits");
-			break;
-		default:
-			fprintf(stderr, "Unknown memory shape: 0x%x\n",
-				device->flags.data_org);
-			minipro_close(handle);
-			exit(EXIT_FAILURE);
-		}
-		if (device->data_memory_size) {
-			fprintf(stderr, " + %u Bytes",
-				device->data_memory_size);
-		}
-		if (device->data_memory2_size) {
-			fprintf(stderr, " + %u Bytes",
-				device->data_memory2_size);
-		}
-		fprintf(stderr, "\n");
-
-		/* Package info */
-		fprintf(stderr, "Package: ");
-		if (device->package_details.adapter) {
-			fprintf(stderr, "Adapter%03d.JPG\n",
-				device->package_details.adapter);
-		} else if (device->package_details.pin_count) {
-			fprintf(stderr, "DIP%d\n",
-				device->package_details.pin_count);
-		} else {
-			fprintf(stderr, "ICSP only\n");
-		}
-
-		/* ICSP connection info */
-		fprintf(stderr, "ICSP: ");
-		if (device->package_details.icsp) {
-			fprintf(stderr, "ICP%03d.JPG\n",
-				device->package_details.icsp);
-		} else {
-			fprintf(stderr, "-\n");
-		}
-
-		fprintf(stderr, "Protocol: 0x%02x\n", device->protocol_id);
-		fprintf(stderr, "Read buffer size: %u Bytes\n",
-			device->read_buffer_size);
-		fprintf(stderr, "Write buffer size: %u Bytes\n",
-			device->write_buffer_size);
-
-		/* Printing device programming info */
-		if (device->flags.can_adjust_vcc ||
-		    device->flags.can_adjust_vpp) {
-			/* Print VPP */
-			fprintf(stderr,
-				"*******************************\nVPP programming voltage: %sV\n",
-				get_voltage(handle, device->voltages.vpp,
-					    VPP_VOLTAGE));
-			if (device->flags.can_adjust_vcc) {
-				/* Print VDD */
-				fprintf(stderr, "VDD write voltage: %sV\n",
-					get_voltage(handle,
-						    device->voltages.vdd,
-						    VCC_VOLTAGE));
-
-				/* Print VCC */
-				fprintf(stderr, "VCC verify voltage: %sV\n",
-					get_voltage(handle,
-						    device->voltages.vcc,
-						    VCC_VOLTAGE));
-
-				/* Print pulse delay */
-				fprintf(stderr, "Pulse delay: %uus\n",
-					device->pulse_delay);
-			}
-		}
-	}
-	minipro_close(handle);
-	exit(EXIT_SUCCESS);
-}
-
-/* Parse and set programming options for both TL866A/CS and TL866II+ */
-int parse_options(minipro_handle_t *handle, int argc, char **argv)
-{
-	uint32_t v;
-	int8_t c;
-	char *p_end, option[64], value[64];
-	int opt_idx = 0;
-	device_t *device = handle->device;
-
-	/* Parse options first */
-	optind = 1;
-	opterr = 0;
-
-	while ((c = getopt_long(argc, argv, "o:", long_options, &opt_idx)) !=
-	       -1) {
-		switch (c) {
-		case 2:
-			if (!strlen(optarg)) {
-				fprintf(stderr,
-					"%s: option '--%s' requires an argument\n",
-					argv[0], long_options[opt_idx].name);
-				return EXIT_FAILURE;
-			}
-			switch (opt_idx) {
-			case 0:
-				errno = 0;
-				v = strtoul(optarg, &p_end, 10);
-				if ((p_end == optarg) || errno)
-					return EXIT_FAILURE;
-				if (v > 0xffff)
-					return EXIT_FAILURE;
-				device->pulse_delay = (uint16_t)v;
-				break;
-			case 1:
-				if (set_voltage(handle, optarg,
-						&device->voltages.vpp,
-						VPP_VOLTAGE))
-					return EXIT_FAILURE;
-				break;
-			case 2:
-				if (set_voltage(handle, optarg,
-						&device->voltages.vdd,
-						VCC_VOLTAGE))
-					return EXIT_FAILURE;
-				break;
-			case 3:
-				if (set_voltage(handle, optarg,
-						&device->voltages.vcc,
-						VCC_VOLTAGE))
-					return EXIT_FAILURE;
-				break;
-			case 4:
-				if (set_spi_speed(handle, optarg,
-						&handle->cmdopts->spi_speed))
-					return EXIT_FAILURE; 
-				break;
-			default:
-				return EXIT_FAILURE;
-			}
-			break;
-		case 'o':
-			if (sscanf(optarg, "%[^=]=%[^=]", option, value) != 2)
-				return EXIT_FAILURE;
-			if (!strcasecmp(option, "pulse")) {
-				/* Parse the numeric value */
-				errno = 0;
-				v = strtoul(value, &p_end, 10);
-				if ((p_end == value) || errno)
-					return EXIT_FAILURE;
-				if (v > 0xffff)
-					return EXIT_FAILURE;
-				handle->device->pulse_delay = (uint16_t)v;
-			} else if (!strcasecmp(option, "vpp")) {
-				if (set_voltage(handle, value,
-						&device->voltages.vpp,
-						VPP_VOLTAGE))
-					return EXIT_FAILURE;
-			} else if (!strcasecmp(option, "vdd")) {
-				if (set_voltage(handle, value,
-						&device->voltages.vdd,
-						VCC_VOLTAGE))
-					return EXIT_FAILURE;
-			} else if (!strcasecmp(option, "vcc")) {
-				if (set_voltage(handle, value,
-						&device->voltages.vcc,
-						VCC_VOLTAGE))
-					return EXIT_FAILURE;
-			} else if (!strcasecmp(option, "speed")) {
-				if (set_spi_speed(handle, value,
-						&handle->cmdopts->spi_speed))
-					return EXIT_FAILURE;
-			} else
-				return EXIT_FAILURE;
-			break;
-		}
-	}
-
-	/* Exit if we are in logic test mode */
-	if (handle->device->chip_type == MP_LOGIC)
-		return EXIT_SUCCESS;
-
-	/* Set the programming options */
-	if ((handle->device->flags.can_adjust_vcc ||
-	     handle->device->flags.can_adjust_vpp) &&
-	    handle->cmdopts->action == WRITE) {
-		/* Print VPP */
-		fprintf(stderr, "\nVPP=%sV",
-			get_voltage(handle, device->voltages.vpp, VPP_VOLTAGE));
-
-		if (handle->device->flags.can_adjust_vcc) {
-			/* Print VDD */
-			fprintf(stderr, ", VDD=%sV, ",
-				get_voltage(handle, device->voltages.vdd,
-					    VCC_VOLTAGE));
-
-			/* Print VCC */
-			fprintf(stderr, "VCC=%sV, ",
-				get_voltage(handle, device->voltages.vcc,
-					    VCC_VOLTAGE));
-
-			/* Print pulse delay */
-			fprintf(stderr, "Pulse=%uus\n",
-				handle->device->pulse_delay);
-		}
-	}
-	return EXIT_SUCCESS;
-}
-
+/* Perform a hardware check (-t) */
 void hardware_check_and_exit()
 {
 	minipro_handle_t *handle = minipro_open(VERBOSE);
@@ -782,6 +446,7 @@ void hardware_check_and_exit()
 	exit(ret);
 }
 
+/* Perform a firmware update (-F) */
 void firmware_update_and_exit(const char *firmware)
 {
 	minipro_handle_t *handle = minipro_open(VERBOSE);
@@ -796,7 +461,7 @@ void firmware_update_and_exit(const char *firmware)
 	exit(ret);
 }
 
-/* Autodetect 25xx SPI devices */
+/* Autodetect 25xx SPI devices (-a) */
 void spi_autodetect_and_exit(uint8_t package_type, cmdopts_t *cmdopts)
 {
 	minipro_handle_t *handle = minipro_open(VERBOSE);
@@ -845,7 +510,7 @@ void spi_autodetect_and_exit(uint8_t package_type, cmdopts_t *cmdopts)
 	db_data.algo_path = cmdopts->algo_path;
 	db_data.chip_id = chip_id;
 	db_data.pin_count = package_type;
-	db_data.version = handle->version;
+	db_data.prog_version = handle->version;
 	db_data.count = &count;
 	fprintf(stderr, "Autodetecting device (ID:0x%04X)\n", chip_id);
 	if (list_devices(&db_data)) {
@@ -859,6 +524,243 @@ void spi_autodetect_and_exit(uint8_t package_type, cmdopts_t *cmdopts)
 	exit(EXIT_SUCCESS);
 }
 
+/* Print the chip info (-d) */
+void print_device_info_and_exit(cmdopts_t *cmdopts)
+{
+	minipro_handle_t *handle = calloc(1, sizeof(minipro_handle_t));
+	if (!handle) {
+		fprintf(stderr, "Out of memory!\n");
+	}
+	handle->cmdopts = cmdopts;
+	handle->version = cmdopts->version;
+	if (get_programmer_version(&handle->version))
+		exit(EXIT_FAILURE);
+	if (get_device(handle)) {
+		minipro_close(handle);
+		exit(EXIT_FAILURE);
+	}
+
+	device_t *device = handle->device;
+	fprintf(stderr, "\n%s\nName: %s\n", INFO, device->name);
+
+	if (device->chip_type == MP_LOGIC) {
+		fprintf(stderr,
+			"Package:\t DIP%d\nVector count:\t %d\n%s\nDefault VCC voltage: %s V\n",
+			device->package_details.pin_count, device->vector_count,
+			SEP,
+			get_parameter(handle, device->voltages.vcc,
+				      LOGIC_VOLTAGE));
+		print_parameters_table("Available VCC voltages [V]: ",
+				       device->vcc_logic_table);
+	} else {
+		/* Availability */
+		fprintf(stderr, "Available on: ");
+		switch (handle->version) {
+		case MP_TL866A:
+			fprintf(stderr, "TL866A/CS\n");
+			break;
+		case MP_T76:
+			fprintf(stderr, "T76\n");
+			break;
+		default:
+			int c = 0;
+			int all = (!device->tl866_only && !device->t48_only &&
+				   !device->t56_only);
+			if (all || device->tl866_only) {
+				fprintf(stderr, "TL866II");
+				c++;
+			}
+			if (all || device->t48_only) {
+				fprintf(stderr, "%sT48", c ? ", " : "");
+				c++;
+			}
+			if (all || device->t56_only) {
+				fprintf(stderr, "%sT56", c ? ", " : "");
+				c++;
+			}
+			fprintf(stderr, "%s\n", --c ? "" : " only");
+		}
+		/* Memory shape */
+		fprintf(stderr, "Memory: %u",
+			device->code_memory_size / device->flags.word_size);
+		switch (device->flags.data_org) {
+		case MP_ORG_BYTES:
+			fprintf(stderr, " Bytes");
+			break;
+		case MP_ORG_WORDS:
+			fprintf(stderr, " Words");
+			break;
+		case MP_ORG_BITS:
+			fprintf(stderr, " Bits");
+			break;
+		default:
+			fprintf(stderr, "Unknown memory shape: 0x%x\n",
+				device->flags.data_org);
+			minipro_close(handle);
+			exit(EXIT_FAILURE);
+		}
+		if (device->data_memory_size) {
+			fprintf(stderr, " + %u Bytes",
+				device->data_memory_size);
+		}
+		if (device->data_memory2_size) {
+			fprintf(stderr, " + %u Bytes",
+				device->data_memory2_size);
+		}
+		fprintf(stderr, "\n");
+
+		/* Package info */
+		fprintf(stderr, "Package: ");
+		if (device->package_details.adapter) {
+			fprintf(stderr, "Adapter%03d.JPG\n",
+				device->package_details.adapter);
+		} else if (device->package_details.pin_count) {
+			fprintf(stderr, "%s%d\n",
+				device->package_details.plcc ? "PLCC" : "DIP",
+				device->package_details.pin_count);
+		} else {
+			fprintf(stderr, "ICSP only\n");
+		}
+
+		/* ICSP connection info if avialable */
+		if (device->package_details.icsp) {
+			fprintf(stderr, "ICSP: ICP%03d.JPG\n",
+				device->package_details.icsp);
+		}
+
+		/* Protocol and algorithm info */
+		fprintf(stderr, "Protocol: 0x%02x\n", device->protocol_id);
+		if ((handle->version == MP_T56 || handle->version == MP_T76) &&
+		    !get_algorithm(device, MP_T76, handle->cmdopts->algo_path,
+				   handle->cmdopts->icsp,
+				   handle->cmdopts->vopt)) {
+			fprintf(stderr, "Algorithm: %s\n",
+				device->algorithm.name);
+			free(device->algorithm.bitstream);
+		}
+
+		/* Read/Write buffer size if available */
+		if (device->read_buffer_size && device->write_buffer_size) {
+			fprintf(stderr, "Read buffer size: %u Bytes\n",
+				device->read_buffer_size);
+			fprintf(stderr, "Write buffer size: %u Bytes\n",
+				device->write_buffer_size);
+		}
+
+		/* Printing available SPI clock info */
+		if (device->flags.can_adjust_clock && device->spi_clock_table) {
+			fprintf(stderr, "%s\n", SEP);
+			print_parameters_table(
+				"Available SPI clock frequencies [MHz]: ",
+				device->spi_clock_table);
+		}
+
+		/* Printing device programming voltages info */
+		if (device->flags.can_adjust_vcc ||
+		    device->flags.can_adjust_vpp) {
+			fprintf(stderr, "%s\n", SEP);
+			/* Print VPP */
+			fprintf(stderr,
+				"Default VPP programming voltage: %s V\n",
+				get_parameter(handle, device->voltages.vpp,
+					      VPP_VOLTAGE));
+			print_parameters_table("Available VPP voltages [V]: ",
+					       device->vpp_table);
+			fprintf(stderr, "\n");
+
+			if (device->flags.can_adjust_vcc) {
+				/* Print VDD */
+				fprintf(stderr,
+					"Default VDD write voltage: %s V\n",
+					get_parameter(handle,
+						      device->voltages.vdd,
+						      VCC_VOLTAGE));
+				print_parameters_table(
+					"Available VDD write voltages [V]: ",
+					device->vcc_table);
+				fprintf(stderr, "\n");
+
+				/* Print VCC */
+				fprintf(stderr,
+					"Default VCC verify voltage: %s V\n",
+					get_parameter(handle,
+						      device->voltages.vcc,
+						      VCC_VOLTAGE));
+				print_parameters_table(
+					"Available VCC verify voltages [V]: ",
+					device->vcc_table);
+				fprintf(stderr, "\n");
+
+				/* Print pulse delay */
+				fprintf(stderr,
+					"Default write pulse: %u us\nAvailable write pulse[us]: 1-65535\n",
+					device->pulse_delay);
+			}
+		}
+		fprintf(stderr, "%s\n", SEP);
+	}
+	minipro_close(handle);
+	exit(EXIT_SUCCESS);
+}
+
+/* Start, stop and report progress */
+void progress_status(const char *label_fmt, int progress_percent, int done, ...)
+{
+	static struct {
+		char label[64];
+		struct timeval begin;
+	} state;
+
+	/* Start progress */
+	if (label_fmt && !done && progress_percent < 0) {
+		va_list args;
+		va_start(args, done);
+		vsnprintf(state.label, sizeof(state.label), label_fmt, args);
+		va_end(args);
+		gettimeofday(&state.begin, NULL);
+		fprintf(stderr, "\r\e[K%s", state.label);
+		fflush(stderr);
+		return;
+	}
+
+	if (!done) {
+		/* Progress update */
+		fprintf(stderr, "\r\e[K%s%2d%%", state.label, progress_percent);
+		fflush(stderr);
+	} else {
+		/* Done */
+		struct timeval end;
+		gettimeofday(&end, NULL);
+
+		double elapsed =
+			(end.tv_sec - state.begin.tv_sec) +
+			(end.tv_usec - state.begin.tv_usec) / 1000000.0;
+
+		fprintf(stderr, "\r\e[K%s", state.label);
+
+		if (elapsed < 1.0) {
+			double ms = elapsed * 1000;
+			if (((int)(ms * 10)) % 10 == 0)
+				fprintf(stderr, "%.0f ms  OK\n", ms);
+			else
+				fprintf(stderr, "%.1f ms  OK\n", ms);
+		} else if (elapsed < 60.0) {
+			if (((int)(elapsed * 100)) % 100 == 0)
+				fprintf(stderr, "%.0f Sec  OK\n", elapsed);
+			else if (((int)(elapsed * 10)) % 10 == 0)
+				fprintf(stderr, "%.1f Sec  OK\n", elapsed);
+			else
+				fprintf(stderr, "%.2f Sec  OK\n", elapsed);
+		} else {
+			int minutes = (int)(elapsed / 60);
+			int seconds = (int)(elapsed) % 60;
+			fprintf(stderr, "%dm %d Sec  OK\n", minutes, seconds);
+		}
+		fflush(stderr);
+	}
+}
+
+/* Parse command line options */
 void parse_cmdline(int argc, char **argv, cmdopts_t *cmdopts)
 {
 	int8_t c;
@@ -866,15 +768,15 @@ void parse_cmdline(int argc, char **argv, cmdopts_t *cmdopts)
 	void (*p_func)(cmdopts_t *) = NULL;
 
 	memset(cmdopts, 0, sizeof(cmdopts_t));
-	long_options[5].flag = &cmdopts->filter_fuses;
-	long_options[6].flag = &cmdopts->filter_uid;
-	long_options[7].flag = &cmdopts->filter_locks;
+	long_options[6].flag = &cmdopts->filter_fuses;
+	long_options[7].flag = &cmdopts->filter_uid;
+	long_options[8].flag = &cmdopts->filter_locks;
 	while ((c = getopt_long(argc, argv,
 				"lL:q:Qkd:ea:zEbTuPvxyr:w:m:p:c:o:iIsSVhDtf:F:",
 				long_options, NULL)) != -1) {
 		switch (c) {
 		case 0:
-		case 2: /* Skip vdd, vcc, vpp, pulse, speed here */
+		case 2: /* Skip vdd, vcc, vpp, pulse and spi_clock here */
 			break;
 		case 3:
 			cmdopts->infoic_path = optarg; /* Custom infoic.xml */
@@ -883,7 +785,8 @@ void parse_cmdline(int argc, char **argv, cmdopts_t *cmdopts)
 			cmdopts->logicic_path = optarg; /* Custom logicic.xml */
 			break;
 		case 5:
-			cmdopts->logicic_out = optarg; /* Logic test output file */
+			cmdopts->logicic_out =
+				optarg; /* Logic test output file */
 			break;
 		case 6:
 			cmdopts->algo_path = optarg; /* Custom algorithm.xml */
@@ -897,6 +800,8 @@ void parse_cmdline(int argc, char **argv, cmdopts_t *cmdopts)
 				cmdopts->version = MP_T48;
 			else if (!strcasecmp(optarg, "t56"))
 				cmdopts->version = MP_T56;
+			else if (!strcasecmp(optarg, "t76"))
+				cmdopts->version = MP_T76;
 			else {
 				fprintf(stderr,
 					"Unknown programmer version (%s).\n",
@@ -932,7 +837,8 @@ void parse_cmdline(int argc, char **argv, cmdopts_t *cmdopts)
 			break;
 
 		case 'u':
-			cmdopts->protect_off = 1; /* 1 = disable write protect */
+			cmdopts->protect_off =
+				1; /* 1 = disable write protect */
 			break;
 
 		case 'P':
@@ -944,7 +850,8 @@ void parse_cmdline(int argc, char **argv, cmdopts_t *cmdopts)
 			break;
 
 		case 'x':
-			cmdopts->idcheck_skip = 1; /* 1= do not test id at all */
+			cmdopts->idcheck_skip =
+				1; /* 1= do not test id at all */
 			break;
 
 		case 'y':
@@ -953,7 +860,8 @@ void parse_cmdline(int argc, char **argv, cmdopts_t *cmdopts)
 			break;
 
 		case 'z':
-			cmdopts->pincheck = 1; /* 1= Check for bad pin contact */
+			cmdopts->pincheck =
+				1; /* 1= Check for bad pin contact */
 			break;
 
 		case 'p':
@@ -1099,61 +1007,226 @@ void parse_cmdline(int argc, char **argv, cmdopts_t *cmdopts)
 		p_func(cmdopts);
 	if (package_type)
 		spi_autodetect_and_exit(package_type, cmdopts);
+
+	/* Check if a file name is required */
+	switch (cmdopts->action) {
+	case LOGIC_IC_TEST:
+		break;
+	case READ:
+	case WRITE:
+	case VERIFY:
+		if (!cmdopts->filename && !cmdopts->idcheck_only) {
+			fprintf(stderr,
+				"A file name is required for this action.\n");
+			print_help_and_exit(argv[0]);
+		}
+		break;
+	default:
+		break;
+	}
+
+	/* Check if a device name is required */
+	if (!cmdopts->device_name) {
+		fprintf(stderr,
+			"Device required. Use -p <device> to specify a device.\n");
+		print_help_and_exit(argv[0]);
+	}
+
+	/* don't permit skipping the ID read in write/erase-mode or ID
+	 * only mode */
+	if ((cmdopts->action == WRITE || cmdopts->action == ERASE ||
+	     cmdopts->idcheck_only) &&
+	    cmdopts->idcheck_skip) {
+		fprintf(stderr,
+			"Skipping the ID check is not permitted for this action.\n");
+		print_help_and_exit(argv[0]);
+	}
+
+	/* Exit if no action is supplied */
+	if (cmdopts->action == NO_ACTION && !cmdopts->idcheck_only &&
+	    !cmdopts->pincheck) {
+		fprintf(stderr, "No action to perform.\n");
+		print_help_and_exit(argv[0]);
+	}
+
+	/* Set the pipe flag */
+	if (cmdopts->filename) {
+		cmdopts->is_pipe = (!strcmp(cmdopts->filename, "-"));
+	}
 }
 
-/* Search for config name in buffer. */
-int get_config_value(const char *buffer, const char *name, uint16_t *value)
+/* Parse and set programming options for all supported programmers */
+int parse_options(minipro_handle_t *handle, int argc, char **argv)
 {
-	char *cur, *eol, *val;
-	char num[128];
-	for (;;) {
-		cur = STRCASESTR(buffer, name); /* find the line */
-		if (!cur)
-			return EXIT_FAILURE;
-		eol = STRCASESTR(cur, (char *)"\n"); /* find the end of line */
-		if (!cur)
-			return EXIT_FAILURE;
-		cur = STRCASESTR(
-			cur,
-			(char *)"="); /* find the '=' sign in the current line */
-		if (!cur)
-			return EXIT_FAILURE;
-		cur = STRCASESTR(
-			cur,
-			(char *)"0x"); /* find the value in the current line */
-		if (!cur)
-			return EXIT_FAILURE;
-		val = num;
-		cur += 2; /* Advances the pointer to the first numeric character */
-		while (cur < eol) {
-			if (isxdigit((int)*cur++)) /* check for hex digit */
-			{
-				*val++ = *(cur - 1); /* put it in the buffer */
+	uint32_t v;
+	int8_t c;
+	char *p_end, option[64], value[64];
+	int opt_idx = 0;
+	device_t *device = handle->device;
+	uint8_t bb = device->flags.custom_protocol;
+
+	/* Parse options first */
+	optind = 1;
+	opterr = 0;
+
+	while ((c = getopt_long(argc, argv, "o:", long_options, &opt_idx)) !=
+	       -1) {
+		switch (c) {
+		case 2:
+			if (!strlen(optarg)) {
+				fprintf(stderr,
+					"%s: option '--%s' requires an argument\n",
+					argv[0], long_options[opt_idx].name);
+				return EXIT_FAILURE;
 			}
-		}
-		/* here we reached the end of line */
-		*val = 0;	/* insert null terminated string char */
-		if (val == num) /* if no numeric value found exit with error */
+			switch (opt_idx) {
+			case 0:
+				errno = 0;
+				v = strtoul(optarg, &p_end, 0);
+				if ((p_end == optarg) || errno)
+					return EXIT_FAILURE;
+				if (v > 0xffff)
+					return EXIT_FAILURE;
+				device->pulse_delay = (uint16_t)v;
+				break;
+			case 1:
+				if (set_parameter(handle, optarg,
+						  &device->voltages.vpp,
+						  bb ? VPP_BB_VOLTAGE :
+						       VPP_VOLTAGE))
+					return EXIT_FAILURE;
+				break;
+			case 2:
+				if (set_parameter(handle, optarg,
+						  &device->voltages.vdd,
+						  bb ? VCC_BB_VOLTAGE :
+						       VCC_VOLTAGE))
+					return EXIT_FAILURE;
+				break;
+			case 3:
+				if (set_parameter(handle, optarg,
+						  &device->voltages.vcc,
+						  bb ? VCC_BB_VOLTAGE :
+						       VCC_VOLTAGE))
+					return EXIT_FAILURE;
+				break;
+			case 4:
+				handle->cmdopts->set_spi_clock = 1;
+				if (!device->flags.can_adjust_clock)
+					break;
+				if (set_parameter(handle, optarg,
+						  &device->spi_clock,
+						  SPI_CLOCK))
+					return EXIT_FAILURE;
+				break;
+			case 5:
+				handle->cmdopts->set_i2c_addr = 1;
+				if (!device->flags.can_adjust_address)
+					break;
+				errno = 0;
+				v = strtoul(optarg, &p_end, 0);
+				if ((p_end == optarg) || errno)
+					return EXIT_FAILURE;
+				if (v > 0xff)
+					return EXIT_FAILURE;
+				device->i2c_address = (uint8_t)v;
+				break;
+			default:
+				return EXIT_FAILURE;
+			}
 			break;
-		else {
-			*value = (uint16_t)strtol((char *)num, NULL,
-						  16); /* convert value */
-			return EXIT_SUCCESS;
+		case 'o':
+			if (sscanf(optarg, "%[^=]=%[^=]", option, value) != 2)
+				return EXIT_FAILURE;
+			if (!strcasecmp(option, "pulse")) {
+				/* Parse the numeric value */
+				errno = 0;
+				v = strtoul(value, &p_end, 0);
+				if ((p_end == value) || errno)
+					return EXIT_FAILURE;
+				if (v > 0xffff)
+					return EXIT_FAILURE;
+				handle->device->pulse_delay = (uint16_t)v;
+			}
+			if (!strcasecmp(option, "address")) {
+				handle->cmdopts->set_i2c_addr = 1;
+				if (!device->flags.can_adjust_address)
+					break;
+				/* Parse the numeric value */
+				errno = 0;
+				v = strtoul(optarg, &p_end, 0);
+				if ((p_end == optarg) || errno)
+					return EXIT_FAILURE;
+				if (v > 0xff)
+					return EXIT_FAILURE;
+				device->i2c_address = (uint8_t)v;
+				handle->cmdopts->set_i2c_addr = 1;
+			} else if (!strcasecmp(option, "vpp")) {
+				if (set_parameter(handle, value,
+						  &device->voltages.vpp,
+						  bb ? VPP_BB_VOLTAGE :
+						       VPP_VOLTAGE))
+					return EXIT_FAILURE;
+			} else if (!strcasecmp(option, "vdd")) {
+				if (set_parameter(handle, value,
+						  &device->voltages.vdd,
+						  bb ? VCC_BB_VOLTAGE :
+						       VCC_VOLTAGE))
+					return EXIT_FAILURE;
+			} else if (!strcasecmp(option, "vcc")) {
+				if (set_parameter(handle, value,
+						  &device->voltages.vcc,
+						  bb ? VCC_BB_VOLTAGE :
+						       VCC_VOLTAGE))
+					return EXIT_FAILURE;
+			} else if (!strcasecmp(option, "spi_clock")) {
+				if (set_parameter(handle, value,
+						  &device->spi_clock,
+						  SPI_CLOCK))
+					handle->cmdopts->set_spi_clock = 1;
+				return EXIT_FAILURE;
+			} else
+				return EXIT_FAILURE;
+			break;
 		}
 	}
+	return EXIT_SUCCESS;
+}
+
+/* Search for fuse name in buffer. */
+int get_fuse_value(const char *buffer, size_t size, const char *key,
+		   uint16_t *value)
+{
+	char *copy = strndup(buffer, size);
+	if (!copy)
+		return EXIT_FAILURE;
+
+	char *token = strtok(copy, " \t\r\n");
+	while (token) {
+		char *eq = strchr(token, '=');
+		if (eq) {
+			*eq = '\0';
+			const char *k = token;
+			const char *v = eq + 1;
+
+			if (!strcasecmp(k, key)) {
+				char *endptr = NULL;
+				unsigned long val = strtoul(v, &endptr, 0);
+				if (*endptr == '\0' && val <= 0xFFFF) {
+					*value = (uint16_t)val;
+					free(copy);
+					return EXIT_SUCCESS;
+				}
+			}
+		}
+		token = strtok(NULL, " \t\r\n");
+	}
+
+	free(copy);
 	return EXIT_FAILURE;
 }
 
-void update_status(char *status_msg, char *fmt, ...)
-{
-	va_list args;
-	va_start(args, fmt);
-	fprintf(stderr, "\r\e[K%s", status_msg);
-	vfprintf(stderr, fmt, args);
-	fflush(stderr);
-	va_end(args);
-}
-
+/* Compare memory */
 int compare_memory(uint8_t compare_mask, uint8_t *s1, uint8_t *s2, size_t size1,
 		   size_t size2, uint32_t *address, uint8_t *c1, uint8_t *c2)
 {
@@ -1223,154 +1296,152 @@ int compare_word_memory(uint16_t replacement_value, uint16_t compare_mask,
 }
 
 /* RAM-centric IO operations */
-int read_page_ram(minipro_handle_t *handle, uint8_t *buf, uint8_t type,
+int read_page_ram(minipro_handle_t *handle, uint8_t *buffer, uint8_t type,
 		  size_t size)
 {
-	char status_msg[64], *name;
-	switch (type) {
-	case MP_DATA:
-		name = "Data";
-		break;
-	case MP_USER:
-		name = "User";
-		break;
-	default:
-		name = "Code";
-	}
-	snprintf(status_msg, sizeof(status_msg), "Reading %s...  ", name);
+	const char *name = (type == MP_DATA) ? "Data" :
+			   (type == MP_USER) ? "User" :
+					       "Code";
 
-	size_t buffer_size = size < handle->device->read_buffer_size ?
-				     size :
-				     handle->device->read_buffer_size;
-	size_t blocks_count = size / buffer_size;
-	if (size % buffer_size)
-		blocks_count++;
+	data_set_t ds = { .data = buffer,
+			  .type = type,
+			  .size = (size < handle->device->read_buffer_size) ?
+					  size :
+					  handle->device->read_buffer_size,
+			  .init = 1 };
 
-	struct timeval begin, end;
-	gettimeofday(&begin, NULL);
+	ds.block_count = (size + ds.size - 1) / ds.size;
+
 	/* Some controllers have data memory (eeprom) mapped to a
 	 * different address than 0 in programming mode. For ex. AT89S8252 */
-	uint32_t offset = (handle->device->flags.has_data_offset) ?
+	uint32_t offset = handle->device->flags.has_data_offset ?
 				  handle->device->page_size :
 				  0;
-	uint32_t address;
-	size_t i;
-	for (i = 0; i < blocks_count; i++) {
-		update_status(status_msg, "%2d%%", i * 100 / blocks_count);
+
+	/* Initialize progress reporting */
+	progress_status("Reading %s...  ", -1, 0, name);
+
+	for (size_t i = 0; i < ds.block_count; i++) {
 		/* Translating address to protocol-specific */
-		address = i * buffer_size + offset;
-		if (handle->device->flags.has_word && type == MP_CODE)
-			address = address >> 1;
+		ds.address = i * ds.size + offset;
 
-		if (minipro_read_block(handle, type, address,
-				       buf + i * buffer_size, buffer_size))
+		if (handle->device->flags.data_org == MP_ORG_WORDS &&
+		    type == MP_CODE) {
+			ds.address >>= 1;
+		}
+
+		if (minipro_read_block(handle, &ds))
 			return EXIT_FAILURE;
 
-		uint8_t ovc;
-		if (minipro_get_ovc_status(handle, NULL, &ovc))
-			return EXIT_FAILURE;
-		if (ovc) {
-			fprintf(stderr, "\nOvercurrent protection!\007\n");
-			return EXIT_FAILURE;
+		ds.data += ds.size;
+		ds.init = 0;
+
+		/* Report progress */
+		progress_status(NULL, i * 100 / ds.block_count, 0);
+
+		/* T76 doesn't support calling get_ovc_status while read/write */
+		if (handle->version != MP_T76) {
+			uint8_t ovc = 0;
+			if (minipro_get_ovc_status(handle, NULL, &ovc))
+				return EXIT_FAILURE;
+			if (ovc) {
+				fprintf(stderr,
+					"\nOvercurrent protection!\007\n");
+				return EXIT_FAILURE;
+			}
 		}
 	}
-	gettimeofday(&end, NULL);
-	snprintf(status_msg, sizeof(status_msg), "Reading %s...  %.2fSec  OK",
-		 name,
-		 (double)(end.tv_usec - begin.tv_usec) / 1000000 +
-			 (double)(end.tv_sec - begin.tv_sec));
-	update_status(status_msg, "\n");
+
+	/* Stop progress and print elapsed time */
+	progress_status(NULL, 0, 1);
+
 	return EXIT_SUCCESS;
 }
 
 int write_page_ram(minipro_handle_t *handle, uint8_t *buffer, uint8_t type,
 		   size_t size)
 {
-	char status_msg[64], *name;
-	switch (type) {
-	case MP_DATA:
-		name = "Data";
-		break;
-	case MP_USER:
-		name = "User";
-		break;
-	default:
-		name = "Code";
-	}
-	snprintf(status_msg, sizeof(status_msg), "Writing  %s...  ", name);
+	const char *name = (type == MP_DATA) ? "Data" :
+			   (type == MP_USER) ? "User" :
+					       "Code";
 
-	size_t buffer_size = handle->device->write_buffer_size;
-	size_t blocks_count = size / buffer_size;
-	if (size % buffer_size)
-		blocks_count++;
+	data_set_t ds = { .data = buffer,
+			  .type = type,
+			  .size = handle->device->write_buffer_size,
+			  .init = 1 };
+	ds.block_count = (size + ds.size - 1) / ds.size;
 
-	struct timeval begin, end;
-	gettimeofday(&begin, NULL);
 	minipro_status_t status;
-	size_t i;
+
 	/* Some controllers have data memory (eeprom) mapped to a
 	 * different address than 0 in programming mode. For ex. AT89S8252 */
-	uint32_t offset = (handle->device->flags.has_data_offset) ?
+	uint32_t offset = handle->device->flags.has_data_offset ?
 				  handle->device->page_size :
 				  0;
-	uint32_t address;
-	for (i = 0; i < blocks_count; i++) {
-		update_status(status_msg, "%2d%%", i * 100 / blocks_count);
+
+	/* Initialize progress reporting */
+	progress_status("Writing  %s...  ", -1, 0, name);
+
+	for (size_t i = 0; i < ds.block_count; i++) {
 		/* Translating address to protocol-specific */
-		address = i * buffer_size + offset;
-		if (handle->device->flags.has_word && type == MP_CODE)
-			address = address >> 1;
+		ds.address = i * ds.size + offset;
+		if (handle->device->flags.data_org == MP_ORG_WORDS &&
+		    type == MP_CODE) {
+			ds.address >>= 1;
+		}
 
 		/* Last block */
-		if ((i + 1) * buffer_size > size)
-			buffer_size = size % buffer_size;
-		if (minipro_write_block(handle, type, address,
-					buffer + i * buffer_size, buffer_size))
+		if ((i + 1) * ds.size > size)
+			ds.size = size % ds.size;
+
+		if (minipro_write_block(handle, &ds))
 			return EXIT_FAILURE;
 
-		uint8_t ovc = 0;
-		if (minipro_get_ovc_status(handle, &status, &ovc))
-			return EXIT_FAILURE;
-		if (ovc) {
-			fprintf(stderr, "\nOvercurrent protection!\007\n");
-			return EXIT_FAILURE;
-		}
-		if (status.error && !handle->cmdopts->no_verify) {
-			if (minipro_end_transaction(handle))
+		ds.data += ds.size;
+		ds.init = 0;
+
+		/* Report progress */
+		progress_status(NULL, i * 100 / ds.block_count, 0);
+
+		/* T76 doesn't support calling get_ovc_status while read/write */
+		if (handle->version != MP_T76) {
+			uint8_t ovc = 0;
+			if (minipro_get_ovc_status(handle, &status, &ovc))
 				return EXIT_FAILURE;
-			fprintf(stderr,
-				"\nVerification failed at address 0x%04X: File=0x%02X, "
-				"Device=0x%02X\n",
-				status.address,
-				status.c2 &
-					(handle->device->flags.word_size == 1 ?
-						 0xFF :
-						 0xFFFF),
-				status.c1 &
-					(handle->device->flags.word_size == 1 ?
-						 0xFF :
-						 0xFFFF));
-			return EXIT_FAILURE;
+
+			if (ovc) {
+				fprintf(stderr,
+					"\nOvercurrent protection!\007\n");
+				return EXIT_FAILURE;
+			}
+
+			if (status.error && !handle->cmdopts->no_verify) {
+				if (minipro_end_transaction(handle))
+					return EXIT_FAILURE;
+
+				uint32_t mask =
+					handle->device->flags.word_size == 1 ?
+						0xFF :
+						0xFFFF;
+
+				fprintf(stderr,
+					"\nVerification failed at address 0x%04X: File=0x%02X, Device=0x%02X\n",
+					status.address, status.c2 & mask,
+					status.c1 & mask);
+				return EXIT_FAILURE;
+			}
 		}
 	}
-	gettimeofday(&end, NULL);
-	snprintf(status_msg, sizeof(status_msg), "Writing %s...  %.2fSec  OK",
-		 name,
-		 (double)(end.tv_usec - begin.tv_usec) / 1000000 +
-			 (double)(end.tv_sec - begin.tv_sec));
-	update_status(status_msg, "\n");
+
+	/* Stop progress and print elapsed time */
+	progress_status(NULL, 0, 1);
+
 	return EXIT_SUCCESS;
 }
 
 /* Read PLD device */
 int read_jedec(minipro_handle_t *handle, jedec_t *jedec)
 {
-	size_t i, j;
-	struct timeval begin, end;
-	gettimeofday(&begin, NULL);
-
-	char status_msg[64];
-	snprintf(status_msg, sizeof(status_msg), "Reading device... ");
 	uint8_t buffer[32];
 	gal_config_t *config = (gal_config_t *)handle->device->config;
 
@@ -1382,71 +1453,76 @@ int read_jedec(minipro_handle_t *handle, jedec_t *jedec)
 		return EXIT_FAILURE;
 	}
 
+	jedec_set_t js = {
+		.data = buffer, .flags = 0, .size = config->row_width, .type = 2
+	};
+
+	/* Initialize progress reporting */
+	progress_status("Reading device... ", -1, 0);
+
 	/* Read fuses */
 	memset(jedec->fuses, 0, jedec->QF);
-	for (i = 0; i < config->fuses_size; i++) {
-		if (minipro_read_jedec_row(handle, buffer, i, 0,
-					   config->row_width))
+	for (js.row = 0; js.row < config->fuses_size; js.row++) {
+		if (minipro_read_jedec_row(handle, &js))
 			return EXIT_FAILURE;
 		/* Unpacking the row */
-		for (j = 0; j < config->row_width; j++) {
+		for (int j = 0; j < config->row_width; j++) {
 			if (buffer[j / 8] & (0x80 >> (j & 0x07)))
-				jedec->fuses[config->fuses_size * j + i] = 1;
+				jedec->fuses[config->fuses_size * j + js.row] =
+					1;
 		}
-		update_status(status_msg, "%2d%%",
-			      i * 100 / config->fuses_size);
+
+		/* Report progress */
+		progress_status(NULL, js.row * 100 / config->fuses_size, 0);
 	}
 
 	/* Read user electronic signature (UES)
 	 * UES data can be missing in jedec, e.g. for db entry "ATF22V10C" */
+	js.type = 1;
 	if ((config->ues_address != 0) && (config->ues_size != 0) &&
 	    ((config->ues_address + config->ues_size) <= jedec->QF) &&
 	    !(handle->device->voltages.vdd & ATF_IN_PAL_COMPAT_MODE)) {
-		if (minipro_read_jedec_row(handle, buffer, i, 0,
-					   config->ues_size))
+		js.size = config->ues_size;
+		if (minipro_read_jedec_row(handle, &js))
 			return EXIT_FAILURE;
-		for (j = 0; j < config->ues_size; j++) {
+		for (int j = 0; j < config->ues_size; j++) {
 			if (buffer[j / 8] & (0x80 >> (j & 0x07)))
 				jedec->fuses[config->ues_address + j] = 1;
 		}
 	}
 
 	/* Read architecture control word (ACW) */
-	if (minipro_read_jedec_row(handle, buffer, config->acw_address,
-				   config->acw_address, config->acw_size))
+	js.type = 2;
+	js.row = config->acw_address;
+	js.flags = config->acw_address;
+	js.size = config->acw_size;
+	if (minipro_read_jedec_row(handle, &js))
 		return EXIT_FAILURE;
-	for (i = 0; i < config->acw_size; i++) {
+	for (int i = 0; i < config->acw_size; i++) {
 		if (buffer[i / 8] & (0x80 >> (i & 0x07)))
 			jedec->fuses[config->acw_bits[i]] = 1;
 	}
 
 	/* Read Power-Down bit */
+	js.row = config->powerdown_row;
+	js.flags = 0;
+	js.size = 1;
 	if ((config->powerdown_row != 0) &&
 	    (handle->device->flags.has_power_down)) {
-		if (minipro_read_jedec_row(handle, buffer,
-					   config->powerdown_row, 0, 1))
+		if (minipro_read_jedec_row(handle, &js))
 			return EXIT_FAILURE;
 		jedec->fuses[jedec->QF - 1] = (buffer[0] >> 7) & 0x01;
 	}
 
-	gettimeofday(&end, NULL);
-	snprintf(status_msg, sizeof(status_msg),
-		 "Reading device...  %.2fSec  OK",
-		 (double)(end.tv_usec - begin.tv_usec) / 1000000 +
-			 (double)(end.tv_sec - begin.tv_sec));
-	update_status(status_msg, "\n");
+	/* Stop progress and print elapsed time */
+	progress_status(NULL, 0, 1);
+
 	return EXIT_SUCCESS;
 }
 
 /* Write PLD device */
 int write_jedec(minipro_handle_t *handle, jedec_t *jedec)
 {
-	size_t i, j;
-	struct timeval begin, end;
-	gettimeofday(&begin, NULL);
-
-	char status_msg[64];
-	snprintf(status_msg, sizeof(status_msg), "Writing jedec file... ");
 	uint8_t buffer[32];
 	gal_config_t *config = (gal_config_t *)handle->device->config;
 
@@ -1458,18 +1534,27 @@ int write_jedec(minipro_handle_t *handle, jedec_t *jedec)
 		return EXIT_FAILURE;
 	}
 
+	jedec_set_t js = {
+		.data = buffer, .flags = 0, .size = config->row_width, .type = 0
+	};
+
+	/* Initialize progress reporting */
+	progress_status("Writing jedec file... ", -1, 0);
+
 	/* Write fuses */
-	for (i = 0; i < config->fuses_size; i++) {
+	js.type = 0;
+	for (js.row = 0; js.row < config->fuses_size; js.row++) {
 		memset(buffer, 0, sizeof(buffer));
 		/* Building a row */
-		for (j = 0; j < config->row_width; j++) {
-			if (jedec->fuses[config->fuses_size * j + i] == 1)
+		for (int j = 0; j < config->row_width; j++) {
+			if (jedec->fuses[config->fuses_size * j + js.row] == 1)
 				buffer[j / 8] |= (0x80 >> (j & 0x07));
 		}
-		update_status(status_msg, "%2d%%",
-			      i * 100 / config->fuses_size);
-		if (minipro_write_jedec_row(handle, buffer, i, 0,
-					    config->row_width))
+
+		/* Report progress */
+		progress_status(NULL, js.row * 100 / config->fuses_size, 0);
+
+		if (minipro_write_jedec_row(handle, &js))
 			return EXIT_FAILURE;
 	}
 
@@ -1479,63 +1564,238 @@ int write_jedec(minipro_handle_t *handle, jedec_t *jedec)
 	if ((config->ues_address != 0) && (config->ues_size != 0) &&
 	    ((config->ues_address + config->ues_size) <= jedec->QF) &&
 	    !(handle->device->voltages.vdd & ATF_IN_PAL_COMPAT_MODE)) {
-		for (j = 0; j < config->ues_size; j++) {
+		for (int j = 0; j < config->ues_size; j++) {
 			if (jedec->fuses[config->ues_address + j] == 1)
 				buffer[j / 8] |= (0x80 >> (j & 0x07));
 		}
 	}
 	/* UES field is always written, even when not contained in JEDEC */
-	if (minipro_write_jedec_row(handle, buffer, i, 0, config->ues_size))
+	js.size = config->ues_size;
+	if (minipro_write_jedec_row(handle, &js))
 		return EXIT_FAILURE;
 
 	/* Write architecture control word (ACW) */
+	js.type = 2;
 	memset(buffer, 0, sizeof(buffer));
-	for (i = 0; i < config->acw_size; i++) {
+	for (int i = 0; i < config->acw_size; i++) {
 		if (jedec->fuses[config->acw_bits[i]] == 1)
 			buffer[i / 8] |= (0x80 >> (i & 0x07));
 	}
-	if (minipro_write_jedec_row(handle, buffer, config->acw_address,
-				    config->acw_address, config->acw_size))
+
+	js.row = config->acw_address;
+	js.flags = config->acw_address;
+	js.size = config->acw_size;
+	if (minipro_write_jedec_row(handle, &js))
 		return EXIT_FAILURE;
 
 	/* Disable Power-Down by writing to specific power-down row */
+	js.row = config->powerdown_row;
+	js.flags = 0;
+	js.size = 1;
 	if (config->powerdown_row != 0) {
 		/* only '0' bits shall be written */
 		if (((handle->device->flags.has_power_down) &&
 		     (jedec->fuses[jedec->QF - 1] == 0)) ||
-		     (handle->device->flags.is_powerdown_disabled)) {
+		    (handle->device->flags.is_powerdown_disabled)) {
 			memset(buffer, 0, sizeof(buffer));
-			if (minipro_write_jedec_row(handle, buffer,
-						    config->powerdown_row, 0,
-						    1))
+			if (minipro_write_jedec_row(handle, &js))
 				return EXIT_FAILURE;
 		}
 	}
 
-	gettimeofday(&end, NULL);
-	snprintf(status_msg, sizeof(status_msg),
-		 "Writing jedec file...  %.2fSec  OK",
-		 (double)(end.tv_usec - begin.tv_usec) / 1000000 +
-			 (double)(end.tv_sec - begin.tv_sec));
-	update_status(status_msg, "\n");
+	/* Stop progress and print elapsed time */
+	progress_status(NULL, 0, 1);
+
 	return EXIT_SUCCESS;
 }
 
+/* Tweaks settings before minipro_begin_transaction */
+int begin_transaction(minipro_handle_t *handle)
+{
+	pack_voltages(&handle->device->voltages);
+	return minipro_begin_transaction(handle);
+}
+
+/* Perform a chip erase */
 int erase_device(minipro_handle_t *handle)
 {
-	struct timeval begin, end;
-	if (handle->cmdopts->no_erase == 0 &&
-	    handle->device->flags.can_erase) /* Not all chips can be erased... */
-	{
-		fprintf(stderr, "Erasing... ");
-		fflush(stderr);
-		gettimeofday(&begin, NULL);
-		if (minipro_erase(handle))
+	uint8_t num_fuses = 0, pld = 0;
+	device_t *device = handle->device;
+	uint8_t version = handle->version;
+
+	/* Not all chips can be erased... */
+	if (handle->cmdopts->no_erase == 0 && device->flags.can_erase) {
+		/* Initialize progress reporting */
+		progress_status("Erasing... ", -1, 0);
+
+		/* Get the appropriate parameters for the erase command */
+		if (device->config) {
+			if (device->chip_type == MP_PLD) {
+				if (version == MP_TL866IIPLUS ||
+				    version == MP_T48 || version == MP_T56 ||
+				    version == MP_T76) {
+					pld = (device->protocol_id ==
+					       IC2_ALG_GAL22) ?
+						      ERASE_PLD1 :
+						      ERASE_PLD2;
+				}
+			} else {
+				fuse_decl_t *fuses =
+					(fuse_decl_t *)device->config;
+				num_fuses = (fuses->num_fuses > 4) ?
+						    1 :
+						    fuses->num_fuses;
+			}
+		}
+
+		if (minipro_erase(handle, num_fuses, pld))
 			return EXIT_FAILURE;
-		gettimeofday(&end, NULL);
-		fprintf(stderr, "%.2fSec OK\n",
-			(double)(end.tv_usec - begin.tv_usec) / 1000000 +
-				(double)(end.tv_sec - begin.tv_sec));
+
+		/* Stop progress and print elapsed time */
+		progress_status(NULL, 0, 1);
+	}
+	return EXIT_SUCCESS;
+}
+
+/* Check the chip ID if applicable */
+int check_chip_id(minipro_handle_t *handle)
+{
+	uint8_t id_type;
+	uint32_t chip_id, chip_id_temp = 0;
+	uint8_t shift = 0;
+	device_t *device = handle->device;
+	cmdopts_t *cmdopts = handle->cmdopts;
+	fuse_decl_t *config = (fuse_decl_t *)device->config;
+
+	/* Read the chip ID */
+	if (begin_transaction(handle) ||
+	    minipro_get_chip_id(handle, &id_type, &chip_id) ||
+	    minipro_end_transaction(handle)) {
+		return EXIT_FAILURE;
+	}
+
+	/* Parse chip ID */
+	switch (id_type) {
+	case MP_ID_TYPE1:
+	case MP_ID_TYPE2:
+	case MP_ID_TYPE5:
+		if (chip_id == device->chip_id) {
+			fprintf(stderr, "Chip ID: 0x%04X  OK\n", chip_id);
+			return EXIT_SUCCESS;
+		}
+		break;
+
+	case MP_ID_TYPE3:
+		if ((device->chip_id >> 5) == (chip_id >> 5)) {
+			fprintf(stderr, "Chip ID: 0x%04X, Rev.0x%02X  OK\n",
+				chip_id >> 5, chip_id & 0x1F);
+			return EXIT_SUCCESS;
+		}
+		shift = 5;
+		chip_id >>= 5;
+		chip_id_temp = chip_id << 5;
+		break;
+
+	case MP_ID_TYPE4:
+		if ((device->chip_id >> config->rev_bits) ==
+		    (chip_id >> config->rev_bits)) {
+			fprintf(stderr, "Chip ID: 0x%04X, Rev.0x%02X  OK\n",
+				chip_id >> config->rev_bits,
+				chip_id & ~(0xFF << config->rev_bits));
+			return EXIT_SUCCESS;
+		}
+		shift = config->rev_bits;
+		chip_id >>= shift;
+		chip_id_temp = chip_id << shift;
+		break;
+	}
+
+	/* If we reach this point, the chip ID didn't match.
+	 * Attempt to identify the chip from the database.
+	 */
+	db_data_t db_data = { 0 };
+	db_data.logicic_path = cmdopts->logicic_path;
+	db_data.infoic_path = cmdopts->infoic_path;
+	db_data.prog_version = handle->version;
+	db_data.chip_id = chip_id_temp;
+	db_data.protocol = device->protocol_id;
+
+	const char *name = get_device_from_id(&db_data);
+
+	if (cmdopts->idcheck_only) {
+		fprintf(stderr,
+			"Chip ID mismatch: expected 0x%04X, got 0x%04X (%s)\n",
+			device->chip_id >> shift, chip_id_temp >> shift,
+			name ? name : "unknown");
+		if (name)
+			free((char *)name);
+		return EXIT_FAILURE;
+	}
+
+	if (cmdopts->idcheck_continue) {
+		fprintf(stderr,
+			"WARNING: Chip ID mismatch: expected 0x%04X, got 0x%04X (%s)\n",
+			device->chip_id >> shift, chip_id_temp >> shift,
+			name ? name : "unknown");
+	} else {
+		fprintf(stderr,
+			"Invalid Chip ID: expected 0x%04X, got 0x%04X (%s)\n"
+			"(use '-y' to continue anyway at your own risk)\n",
+			device->chip_id >> shift, chip_id_temp >> shift,
+			name ? name : "unknown");
+		if (name)
+			free((char *)name);
+		return EXIT_FAILURE;
+	}
+
+	if (name)
+		free((char *)name);
+	return EXIT_SUCCESS;
+}
+
+/* Check for various adapters */
+int check_adapter(minipro_handle_t *handle)
+{
+	/* Unlocking the TSOP48 adapter (if applicable) */
+	uint8_t status;
+	switch (handle->version) {
+	case MP_TL866A:
+	case MP_TL866CS:
+	case MP_TL866IIPLUS:
+		switch (handle->device->package_details.adapter) {
+		case TSOP48_ADAPTER:
+		case SOP44_ADAPTER:
+		case SOP56_ADAPTER:
+			if (minipro_unlock_tsop48(handle, &status)) {
+				return EXIT_FAILURE;
+			}
+			switch (status) {
+			case MP_TSOP48_TYPE_V3:
+				fprintf(stderr, "Found TSOP adapter V3\n");
+				break;
+			case MP_TSOP48_TYPE_NONE:
+				/* Needed to turn off the power on the ZIF socket. */
+				minipro_end_transaction(handle);
+				fprintf(stderr, "TSOP adapter not found!\n");
+				return EXIT_FAILURE;
+			case MP_TSOP48_TYPE_V0:
+				fprintf(stderr, "Found TSOP adapter V0\n");
+				break;
+			case MP_TSOP48_TYPE_FAKE1:
+			case MP_TSOP48_TYPE_FAKE2:
+				fprintf(stderr, "Fake TSOP adapter found!\n");
+				break;
+			}
+			minipro_end_transaction(handle);
+			break;
+		}
+		break;
+	case MP_T48:
+		break;
+	case MP_T56:
+		break;
+	case MP_T76:
+		break;
 	}
 	return EXIT_SUCCESS;
 }
@@ -1709,6 +1969,7 @@ int open_jed_file(minipro_handle_t *handle, jedec_t *jedec)
 	return EXIT_SUCCESS;
 }
 
+/* Helper function to retrieve a file stream pointer */
 FILE *get_file(minipro_handle_t *handle)
 {
 	FILE *file;
@@ -1772,7 +2033,7 @@ int write_page_file(minipro_handle_t *handle, uint8_t type, size_t size)
 		free(file_data);
 		return EXIT_FAILURE;
 	}
-	if (minipro_begin_transaction(handle)) {
+	if (begin_transaction(handle)) {
 		free(file_data);
 		return EXIT_FAILURE;
 	}
@@ -1798,7 +2059,7 @@ int write_page_file(minipro_handle_t *handle, uint8_t type, size_t size)
 			free(file_data);
 			return EXIT_FAILURE;
 		}
-		if (minipro_begin_transaction(handle)) {
+		if (begin_transaction(handle)) {
 			free(file_data);
 			return EXIT_FAILURE;
 		}
@@ -2008,10 +2269,8 @@ int verify_page_file(minipro_handle_t *handle, uint8_t type, size_t size)
 int read_fuses(minipro_handle_t *handle, fuse_decl_t *fuses)
 {
 	size_t i;
-	uint8_t buffer[64];
+	uint8_t buffer[64] = { 0 };
 	uint16_t value;
-	struct timeval begin, end;
-	memset(buffer, 0x00, sizeof(buffer));
 
 	FILE *file = get_file(handle);
 	if (!file)
@@ -2059,11 +2318,11 @@ int read_fuses(minipro_handle_t *handle, fuse_decl_t *fuses)
 		return EXIT_FAILURE;
 	}
 
-	gettimeofday(&begin, NULL);
+	/* Initialize progress reporting */
+	progress_status("Reading config... ", -1, 0);
 
 	/* Read fuses section if requested */
 	if (fuses->num_fuses && (!filter || cmdopts->filter_fuses)) {
-		gettimeofday(&begin, NULL);
 		uint8_t items = fuses->num_fuses;
 
 		if (minipro_read_fuses(handle, MP_FUSE_CFG,
@@ -2078,22 +2337,23 @@ int read_fuses(minipro_handle_t *handle, fuse_decl_t *fuses)
 				&(buffer[i * handle->device->flags.word_size]),
 				handle->device->flags.word_size,
 				MP_LITTLE_ENDIAN);
-/* FIXME: remove this? (DG) */	/* value |= ~(fuses->fuse[i].mask); */
+
+			/* Mask unused bits before compare */
+			value |= ~(fuses->fuse[i].mask);
 			if (handle->device->compare_mask > 0xff)
 				value &= handle->device->compare_mask;
 			if (handle->device->flags.word_size == 1)
 				value &= 0xff;
 			fprintf(file,
 				handle->device->flags.word_size == 1 ?
-					"%s = 0x%02x\n" :
-					"%s = 0x%04x\n",
+					"%s=0x%02x\n" :
+					"%s=0x%04x\n",
 				fuses->fuse[i].name, value);
 		}
 	}
 
 	/* Read user id section if requested */
 	if (fuses->num_uids && (!filter || cmdopts->filter_uid)) {
-		gettimeofday(&begin, NULL);
 		uint8_t item_size = handle->device->flags.data_org ? 2 : 1;
 		if (minipro_read_fuses(handle, MP_FUSE_USER,
 				       fuses->num_uids * item_size, 0,
@@ -2106,15 +2366,13 @@ int read_fuses(minipro_handle_t *handle, fuse_decl_t *fuses)
 					 MP_LITTLE_ENDIAN);
 			value &= (handle->device->compare_mask);
 			fprintf(file,
-				item_size == 1 ? "%s = 0x%02x\n" :
-						 "%s = 0x%04x\n",
+				item_size == 1 ? "%s=0x%02x\n" : "%s=0x%04x\n",
 				user_id[i], value);
 		}
 	}
 
 	/* Read lock section if requested */
 	if (fuses->num_locks && (!filter || cmdopts->filter_locks)) {
-		gettimeofday(&begin, NULL);
 		if (minipro_read_fuses(
 			    handle, MP_FUSE_LOCK,
 			    fuses->num_locks * handle->device->flags.word_size,
@@ -2132,17 +2390,14 @@ int read_fuses(minipro_handle_t *handle, fuse_decl_t *fuses)
 				value &= 0xff;
 			fprintf(file,
 				handle->device->flags.word_size == 1 ?
-					"%s = 0x%02x\n" :
-					"%s = 0x%04x\n",
+					"%s=0x%02x\n" :
+					"%s=0x%04x\n",
 				fuses->lock[i].name, value);
 		}
 	}
 
-	gettimeofday(&end, NULL);
-
-	fprintf(stderr, "Reading config... %.2fSec  OK\n",
-		(double)(end.tv_usec - begin.tv_usec) / 1000000 +
-			(double)(end.tv_sec - begin.tv_sec));
+	/* Stop progress and print elapsed time */
+	progress_status(NULL, 0, 1);
 	fclose(file);
 	return EXIT_SUCCESS;
 }
@@ -2153,7 +2408,6 @@ int write_fuses(minipro_handle_t *handle, fuse_decl_t *fuses)
 	uint8_t wbuffer[64], vbuffer[64];
 	uint16_t value;
 	char config[1024];
-	struct timeval begin, end;
 
 	memset(config, 0, sizeof(config));
 	size_t file_size = sizeof(config);
@@ -2169,7 +2423,7 @@ int write_fuses(minipro_handle_t *handle, fuse_decl_t *fuses)
 		if (minipro_end_transaction(handle)) {
 			return EXIT_FAILURE;
 		}
-		if (minipro_begin_transaction(handle)) {
+		if (begin_transaction(handle)) {
 			return EXIT_FAILURE;
 		}
 	}
@@ -2192,21 +2446,23 @@ int write_fuses(minipro_handle_t *handle, fuse_decl_t *fuses)
 		return EXIT_FAILURE;
 	}
 
+	/* Initialize progress reporting */
+	progress_status("Writing fuses... ", -1, 0);
+
 	/* Write Fuses section if requested */
 	if (fuses->num_fuses && (!filter || section->filter_fuses)) {
-		gettimeofday(&begin, NULL);
-		fprintf(stderr, "Writing fuses... ");
-		fflush(stderr);
-
 		uint8_t items = fuses->num_fuses;
 		for (i = 0; i < fuses->num_fuses; i++) {
-			if (get_config_value(config, fuses->fuse[i].name,
-					     &value) == EXIT_FAILURE) {
+			if (get_fuse_value(config, sizeof(config),
+					   fuses->fuse[i].name,
+					   &value) == EXIT_FAILURE) {
 				fprintf(stderr,
 					"Could not read config %s value.\n",
 					fuses->lock[i].name);
 				return EXIT_FAILURE;
 			}
+
+			/* Mask unused bits before compare */
 			value |= ~(fuses->fuse[i].mask);
 			if (handle->device->compare_mask > 0xff)
 				value &= handle->device->compare_mask;
@@ -2234,6 +2490,8 @@ int write_fuses(minipro_handle_t *handle, fuse_decl_t *fuses)
 				&(vbuffer[i * handle->device->flags.word_size]),
 				handle->device->flags.word_size,
 				MP_LITTLE_ENDIAN);
+
+			/* Mask unused bits before compare */
 			value |= ~(fuses->fuse[i].mask);
 			if (handle->device->compare_mask > 0xff)
 				value &= handle->device->compare_mask;
@@ -2250,21 +2508,20 @@ int write_fuses(minipro_handle_t *handle, fuse_decl_t *fuses)
 				   handle->device->flags.word_size)) {
 			fprintf(stderr, "\nFuses verify error!\n");
 		}
-		gettimeofday(&end, NULL);
-		fprintf(stderr, "%.2fSec  OK\n",
-			(double)(end.tv_usec - begin.tv_usec) / 1000000 +
-				(double)(end.tv_sec - begin.tv_sec));
+
+		/* Stop progress and print elapsed time */
+		progress_status(NULL, 0, 1);
 	}
+
+	/* Initialize progress reporting */
+	progress_status("Writing user id... ", -1, 0);
 
 	/* Write user id section if requested */
 	if (fuses->num_uids && (!filter || section->filter_uid)) {
-		gettimeofday(&begin, NULL);
-		fprintf(stderr, "Writing user id... ");
-		fflush(stderr);
 		uint8_t item_size = handle->device->flags.data_org ? 2 : 1;
 		for (i = 0; i < fuses->num_uids; i++) {
-			if (get_config_value(config, user_id[i], &value) ==
-			    EXIT_FAILURE) {
+			if (get_fuse_value(config, sizeof(config), user_id[i],
+					     &value) == EXIT_FAILURE) {
 				fprintf(stderr,
 					"Could not read config %s value.\n",
 					user_id[i]);
@@ -2294,19 +2551,18 @@ int write_fuses(minipro_handle_t *handle, fuse_decl_t *fuses)
 		if (memcmp(wbuffer, vbuffer, fuses->num_uids * item_size)) {
 			fprintf(stderr, "\nUser ID verify error!\n");
 		}
-		gettimeofday(&end, NULL);
-		fprintf(stderr, "%.2fSec  OK\n",
-			(double)(end.tv_usec - begin.tv_usec) / 1000000 +
-				(double)(end.tv_sec - begin.tv_sec));
+
+		/* Stop progress and print elapsed time */
+		progress_status(NULL, 0, 1);
 	}
+
+	/* Initialize progress reporting */
+	progress_status("Writing lock bits... ", -1, 0);
 
 	/* Write lock section if requested */
 	if (fuses->num_locks && (!filter || section->filter_locks)) {
-		gettimeofday(&begin, NULL);
-		fprintf(stderr, "Writing lock bits... ");
-		fflush(stderr);
 		for (i = 0; i < fuses->num_locks; i++) {
-			if (get_config_value(config, fuses->lock[i].name,
+			if (get_fuse_value(config, sizeof(config), fuses->lock[i].name,
 					     &value) == EXIT_FAILURE) {
 				fprintf(stderr,
 					"Could not read config %s value.\n",
@@ -2355,10 +2611,9 @@ int write_fuses(minipro_handle_t *handle, fuse_decl_t *fuses)
 				fprintf(stderr, "\nLock bits verify error!\n");
 			}
 		}
-		gettimeofday(&end, NULL);
-		fprintf(stderr, "%.2fSec  OK\n",
-			(double)(end.tv_usec - begin.tv_usec) / 1000000 +
-				(double)(end.tv_sec - begin.tv_sec));
+
+		/* Stop progress and print elapsed time */
+		progress_status(NULL, 0, 1);
 	}
 	return EXIT_SUCCESS;
 }
@@ -2377,7 +2632,7 @@ int verify_fuses(minipro_handle_t *handle, fuse_decl_t *fuses)
 	    open_file(handle, (uint8_t *)config, &file_size))
 		return EXIT_FAILURE;
 
-	if (minipro_begin_transaction(handle))
+	if (begin_transaction(handle))
 		return EXIT_FAILURE;
 
 	cmdopts_t *section = handle->cmdopts;
@@ -2406,13 +2661,15 @@ int verify_fuses(minipro_handle_t *handle, fuse_decl_t *fuses)
 		for (i = 0; i < fuses->num_fuses; i++) {
 			value = fuses->fuse[i].def;
 			if (handle->cmdopts->filename &&
-			    get_config_value(config, fuses->fuse[i].name,
+			    get_fuse_value(config, sizeof(config), fuses->fuse[i].name,
 					     &value)) {
 				fprintf(stderr,
 					"Could not read config %s value.\n",
 					fuses->fuse[i].name);
 				return EXIT_FAILURE;
 			}
+
+			/* Mask unused bits before compare */
 			value |= ~(fuses->fuse[i].mask);
 			if (handle->device->compare_mask > 0xff)
 				value &= handle->device->compare_mask;
@@ -2435,6 +2692,8 @@ int verify_fuses(minipro_handle_t *handle, fuse_decl_t *fuses)
 				&(vbuffer[i * handle->device->flags.word_size]),
 				handle->device->flags.word_size,
 				MP_LITTLE_ENDIAN);
+
+			/* Mask unused bits before compare */
 			value |= ~(fuses->fuse[i].mask);
 			if (handle->device->compare_mask > 0xff)
 				value &= handle->device->compare_mask;
@@ -2468,7 +2727,7 @@ int verify_fuses(minipro_handle_t *handle, fuse_decl_t *fuses)
 		for (i = 0; i < fuses->num_uids; i++) {
 			value = handle->device->compare_mask;
 			if (handle->cmdopts->filename &&
-			    get_config_value(config, user_id[i], &value)) {
+			    get_fuse_value(config, sizeof(config), user_id[i], &value)) {
 				fprintf(stderr,
 					"Could not read config %s value.\n",
 					user_id[i]);
@@ -2509,7 +2768,7 @@ int verify_fuses(minipro_handle_t *handle, fuse_decl_t *fuses)
 		for (i = 0; i < fuses->num_locks; i++) {
 			value = fuses->lock[i].def;
 			if (handle->cmdopts->filename &&
-			    get_config_value(config, fuses->lock[i].name,
+			    get_fuse_value(config, sizeof(config), fuses->lock[i].name,
 					     &value)) {
 				fprintf(stderr,
 					"Could not read config %s value.\n",
@@ -2560,226 +2819,217 @@ int verify_fuses(minipro_handle_t *handle, fuse_decl_t *fuses)
 					"Lock bits are in their default value.\n");
 	}
 	return ret;
-	;
-}
-
-char *get_default_filename(const char *filename)
-{
-	char *default_filename = malloc(strlen(filename) + 32);
-	if (!default_filename) {
-		fprintf(stderr, "Out of memory!\n");
-		return NULL;
-	}
-	strcpy(default_filename, filename);
-	return default_filename;
 }
 
 /* Higher-level logic */
 int action_read(minipro_handle_t *handle)
 {
 	jedec_t jedec;
-	if (minipro_begin_transaction(handle))
+	int ret = EXIT_SUCCESS;
+
+	if (begin_transaction(handle))
 		return EXIT_FAILURE;
+
 	if (handle->device->chip_type == MP_PLD) {
 		jedec.QF = handle->device->code_memory_size;
 		if (!jedec.QF) {
 			fprintf(stderr, "Unknown fuse size!\n");
 			return EXIT_FAILURE;
 		}
+
 		jedec.fuses = malloc(jedec.QF);
 		if (!jedec.fuses) {
 			fprintf(stderr, "Out of memory\n");
 			return EXIT_FAILURE;
 		}
 		memset(jedec.fuses, 0, jedec.QF);
+
 		jedec.F = 0;
 		jedec.G = 0;
 		jedec.QP = handle->device->package_details.pin_count;
 		jedec.device_name = handle->device->name;
 
 		if (read_jedec(handle, &jedec)) {
-			free(jedec.fuses);
-			return EXIT_FAILURE;
+			ret = EXIT_FAILURE;
+		} else {
+			FILE *file = get_file(handle);
+			if (!file) {
+				ret = EXIT_FAILURE;
+			} else {
+				if (write_jedec_file(file, &jedec))
+					ret = EXIT_FAILURE;
+				fclose(file);
+			}
 		}
-		FILE *file = get_file(handle);
-		if (!file)
-			return EXIT_FAILURE;
-		if (write_jedec_file(file, &jedec)) {
-			free(jedec.fuses);
-			fclose(file);
-			return EXIT_FAILURE;
-		}
+
 		free(jedec.fuses);
-		fclose(file);
-	} else {
-		/* No GAL device */
-		char *data_filename = handle->cmdopts->filename;
-		char *user_filename = handle->cmdopts->filename;
-		char *config_filename = handle->cmdopts->filename;
-
-		char *default_data_filename =
-			get_default_filename(handle->cmdopts->filename);
-		if (!default_data_filename)
-			return EXIT_FAILURE;
-		char *default_user_filename =
-			get_default_filename(handle->cmdopts->filename);
-		if (!default_user_filename)
-			return EXIT_FAILURE;
-		char *default_config_filename =
-			get_default_filename(handle->cmdopts->filename);
-		if (!default_config_filename)
-			return EXIT_FAILURE;
-
-		if (!handle->cmdopts->is_pipe) {
-			char *data_dot = strrchr(default_data_filename, '.');
-			char *user_dot = strrchr(default_user_filename, '.');
-			char *conf_dot = strrchr(default_config_filename, '.');
-			char *data_ext, *user_ext;
-			switch (handle->cmdopts->format) {
-			case IHEX:
-				data_ext = ".eeprom.hex";
-				user_ext = ".user.hex";
-				break;
-			case SREC:
-				data_ext = ".eeprom.srec";
-				user_ext = ".user.srec";
-				break;
-			default:
-				data_ext = ".eeprom.bin";
-				user_ext = ".user.bin";
-			}
-			strcpy(data_dot ?
-				       data_dot :
-				       default_data_filename +
-					       strlen(handle->cmdopts->filename),
-			       data_ext);
-			strcpy(user_dot ?
-				       user_dot :
-				       default_user_filename +
-					       strlen(handle->cmdopts->filename),
-			       user_ext);
-			strcpy(conf_dot ?
-				       conf_dot :
-				       default_config_filename +
-					       strlen(handle->cmdopts->filename),
-			       ".fuses.conf");
-		}
-
-		int ret = EXIT_SUCCESS;
-		if (handle->cmdopts->page == UNSPECIFIED) {
-			data_filename = default_data_filename;
-			user_filename = default_user_filename;
-			config_filename = default_config_filename;
-		}
-		if (handle->cmdopts->page == CODE ||
-		    handle->cmdopts->page == UNSPECIFIED) {
-			if (read_page_file(handle, MP_CODE,
-					   handle->device->code_memory_size)) {
-				ret = EXIT_FAILURE;
-				goto cleanup;
-			}
-		}
-		if ((handle->cmdopts->page == DATA ||
-		     (handle->cmdopts->page == UNSPECIFIED &&
-		      !handle->cmdopts->is_pipe)) &&
-		    handle->device->data_memory_size) {
-			handle->cmdopts->filename = data_filename;
-			if (read_page_file(handle, MP_DATA,
-					   handle->device->data_memory_size)) {
-				ret = EXIT_FAILURE;
-				goto cleanup;
-			}
-		}
-		if ((handle->cmdopts->page == USER ||
-		     (handle->cmdopts->page == UNSPECIFIED &&
-		      !handle->cmdopts->is_pipe)) &&
-		    handle->device->data_memory2_size) {
-			handle->cmdopts->filename = user_filename;
-			if (read_page_file(handle, MP_USER,
-					   handle->device->data_memory2_size)) {
-				ret = EXIT_FAILURE;
-				goto cleanup;
-			}
-		}
-		if ((handle->cmdopts->page == CONFIG ||
-		     (handle->cmdopts->page == CALIBRATION &&
-		      handle->device->flags.has_calibration) ||
-		     (handle->cmdopts->page == UNSPECIFIED &&
-		      !handle->cmdopts->is_pipe)) &&
-		    handle->device->config) {
-			handle->cmdopts->filename = config_filename;
-			if (read_fuses(handle, handle->device->config)) {
-				ret = EXIT_FAILURE;
-				goto cleanup;
-			}
-		}
-
-		if (handle->cmdopts->page == DATA &&
-		    !handle->device->data_memory_size) {
-			fprintf(stderr, "No data section found.\n");
-			ret = EXIT_FAILURE;
-			goto cleanup;
-		}
-
-		if (handle->cmdopts->page == USER &&
-		    !handle->device->data_memory2_size) {
-			fprintf(stderr, "No user section found.\n");
-			ret = EXIT_FAILURE;
-			goto cleanup;
-		}
-
-		if (handle->cmdopts->page == CONFIG &&
-		    !handle->device->config) {
-			fprintf(stderr, "No config section found.\n");
-			ret = EXIT_FAILURE;
-			goto cleanup;
-		}
-
-		if (handle->cmdopts->page == CALIBRATION &&
-		    !handle->device->flags.has_calibration) {
-			fprintf(stderr,
-				"This chip doesn't have any calibration bytes.\n");
-			ret = EXIT_FAILURE;
-			goto cleanup;
-		}
-
-cleanup:
-		free(default_data_filename);
-		free(default_user_filename);
-		free(default_config_filename);
 		return ret;
 	}
-	return EXIT_SUCCESS;
+
+	/* No PLD */
+	char *base = handle->cmdopts->filename;
+	char *data_filename = base;
+	char *user_filename = base;
+	char *config_filename = base;
+	char *default_data_filename = NULL;
+	char *default_user_filename = NULL;
+	char *default_config_filename = NULL;
+
+	if (!handle->cmdopts->is_pipe) {
+		size_t base_len = strlen(base);
+		default_data_filename = malloc(base_len + 32);
+		default_user_filename = malloc(base_len + 32);
+		default_config_filename = malloc(base_len + 32);
+		if (!default_data_filename || !default_user_filename ||
+		    !default_config_filename) {
+			ret = EXIT_FAILURE;
+			goto end;
+		}
+
+		strcpy(default_data_filename, base);
+		strcpy(default_user_filename, base);
+		strcpy(default_config_filename, base);
+
+		char *data_ext = NULL, *user_ext = NULL;
+		switch (handle->cmdopts->format) {
+		case IHEX:
+			data_ext = ".eeprom.hex";
+			user_ext = ".user.hex";
+			break;
+		case SREC:
+			data_ext = ".eeprom.srec";
+			user_ext = ".user.srec";
+			break;
+		default:
+			data_ext = ".eeprom.bin";
+			user_ext = ".user.bin";
+		}
+		strcat(default_data_filename, data_ext);
+		strcat(default_user_filename, user_ext);
+		strcat(default_config_filename, ".fuses.conf");
+	}
+
+	if (handle->cmdopts->page == UNSPECIFIED) {
+		data_filename = default_data_filename;
+		user_filename = default_user_filename;
+		config_filename = default_config_filename;
+	}
+
+	if (handle->cmdopts->page == CODE ||
+	    handle->cmdopts->page == UNSPECIFIED) {
+		if (read_page_file(handle, MP_CODE,
+				   handle->device->code_memory_size)) {
+			ret = EXIT_FAILURE;
+			goto end;
+		}
+	}
+
+	if ((handle->cmdopts->page == DATA ||
+	     (handle->cmdopts->page == UNSPECIFIED &&
+	      !handle->cmdopts->is_pipe)) &&
+	    handle->device->data_memory_size) {
+		handle->cmdopts->filename = data_filename;
+		if (read_page_file(handle, MP_DATA,
+				   handle->device->data_memory_size)) {
+			ret = EXIT_FAILURE;
+			goto end;
+		}
+	}
+
+	if ((handle->cmdopts->page == USER ||
+	     (handle->cmdopts->page == UNSPECIFIED &&
+	      !handle->cmdopts->is_pipe)) &&
+	    handle->device->data_memory2_size) {
+		handle->cmdopts->filename = user_filename;
+		if (read_page_file(handle, MP_USER,
+				   handle->device->data_memory2_size)) {
+			ret = EXIT_FAILURE;
+			goto end;
+		}
+	}
+
+	if ((handle->cmdopts->page == CONFIG ||
+	     (handle->cmdopts->page == CALIBRATION &&
+	      handle->device->flags.has_calibration) ||
+	     (handle->cmdopts->page == UNSPECIFIED &&
+	      !handle->cmdopts->is_pipe)) &&
+	    handle->device->config) {
+		handle->cmdopts->filename = config_filename;
+		if (read_fuses(handle, handle->device->config)) {
+			ret = EXIT_FAILURE;
+			goto end;
+		}
+	}
+
+	if (handle->cmdopts->page == DATA &&
+	    !handle->device->data_memory_size) {
+		fprintf(stderr, "No data section found.\n");
+		ret = EXIT_FAILURE;
+	}
+
+	if (handle->cmdopts->page == USER &&
+	    !handle->device->data_memory2_size) {
+		fprintf(stderr, "No user section found.\n");
+		ret = EXIT_FAILURE;
+	}
+
+	if (handle->cmdopts->page == CONFIG && !handle->device->config) {
+		fprintf(stderr, "No config section found.\n");
+		ret = EXIT_FAILURE;
+	}
+
+	if (handle->cmdopts->page == CALIBRATION &&
+	    !handle->device->flags.has_calibration) {
+		fprintf(stderr,
+			"This chip doesn't have any calibration bytes.\n");
+		ret = EXIT_FAILURE;
+	}
+
+end:
+	free(default_data_filename);
+	free(default_user_filename);
+	free(default_config_filename);
+	return ret;
 }
 
 int action_write(minipro_handle_t *handle)
 {
 	jedec_t wjedec, rjedec;
-	struct timeval begin, end;
 	int ret = EXIT_SUCCESS;
 	uint8_t c1, c2;
 	uint32_t address;
 
 	if (handle->device->chip_type == MP_PLD) {
+
+		/* Open jedec file */
 		if (open_jed_file(handle, &wjedec))
 			return EXIT_FAILURE;
 
-		if (minipro_begin_transaction(handle)) {
+		/* Begin transaction */
+		if (begin_transaction(handle)) {
 			free(wjedec.fuses);
 			return EXIT_FAILURE;
 		}
+
+		/* Erase device */
 		if (erase_device(handle)) {
 			free(wjedec.fuses);
 			return EXIT_FAILURE;
 		}
+
+		/* Write jedec file */
 		if (write_jedec(handle, &wjedec)) {
 			free(wjedec.fuses);
 			return EXIT_FAILURE;
 		}
+
+		/* End transaction */
 		if (minipro_end_transaction(handle)) {
 			free(wjedec.fuses);
 			return EXIT_FAILURE;
 		}
+
+		/* Verify */
 		if (handle->cmdopts->no_verify == 0) {
 			rjedec.QF = handle->device->code_memory_size;
 			rjedec.F = wjedec.F;
@@ -2789,7 +3039,7 @@ int action_write(minipro_handle_t *handle)
 				return EXIT_FAILURE;
 			}
 			/* compare fuses */
-			if (minipro_begin_transaction(handle)) {
+			if (begin_transaction(handle)) {
 				free(wjedec.fuses);
 				free(rjedec.fuses);
 				return EXIT_FAILURE;
@@ -2817,21 +3067,20 @@ int action_write(minipro_handle_t *handle)
 		free(wjedec.fuses);
 
 		if (handle->cmdopts->protect_on) {
-			fprintf(stderr, "Writing lock bit... ");
-			fflush(stderr);
-			gettimeofday(&begin, NULL);
-			if (minipro_begin_transaction(handle))
+
+			/* Initialize progress reporting */
+			progress_status("Writing lock bit... ", -1, 0);
+
+			if (begin_transaction(handle))
 				return EXIT_FAILURE;
 			if (minipro_write_fuses(handle, MP_FUSE_LOCK, 0, 0,
 						NULL))
 				return EXIT_FAILURE;
 			if (minipro_end_transaction(handle))
 				return EXIT_FAILURE;
-			gettimeofday(&end, NULL);
-			fprintf(stderr, "%.2fSec OK\n",
-				(double)(end.tv_usec - begin.tv_usec) /
-						1000000 +
-					(double)(end.tv_sec - begin.tv_sec));
+
+			/* Stop progress and print elapsed time */
+			progress_status(NULL, 0, 1);
 		}
 
 		/* handle error from verify */
@@ -2846,10 +3095,15 @@ int action_write(minipro_handle_t *handle)
 		}
 
 		return EXIT_SUCCESS;
-	} else {
+
 		/* No GAL devices */
-		if (minipro_begin_transaction(handle))
+	} else {
+
+		/* Begin transaction */
+		if (begin_transaction(handle))
 			return EXIT_FAILURE;
+
+		/* Write specified page(s) */
 		switch (handle->cmdopts->page) {
 		case UNSPECIFIED:
 		case CODE:
@@ -2922,7 +3176,7 @@ int action_verify(minipro_handle_t *handle)
 			memset(wjedec.fuses, 0x01, wjedec.QF);
 		}
 
-		if (minipro_begin_transaction(handle)) {
+		if (begin_transaction(handle)) {
 			free(wjedec.fuses);
 			return EXIT_FAILURE;
 		}
@@ -2935,7 +3189,7 @@ int action_verify(minipro_handle_t *handle)
 			return EXIT_FAILURE;
 		}
 		/* compare fuses */
-		if (minipro_begin_transaction(handle)) {
+		if (begin_transaction(handle)) {
 			free(wjedec.fuses);
 			free(rjedec.fuses);
 			return EXIT_FAILURE;
@@ -2981,7 +3235,7 @@ int action_verify(minipro_handle_t *handle)
 		 * If filename is null then a blank check is performed */
 		if (handle->cmdopts->page == UNSPECIFIED ||
 		    handle->cmdopts->page == CODE) {
-			if (minipro_begin_transaction(handle))
+			if (begin_transaction(handle))
 				return EXIT_FAILURE;
 			if (verify_page_file(handle, MP_CODE,
 					     handle->device->code_memory_size))
@@ -3012,7 +3266,7 @@ int action_verify(minipro_handle_t *handle)
 		    (handle->cmdopts->page == DATA ||
 		     (handle->cmdopts->page == UNSPECIFIED &&
 		      !handle->cmdopts->filename))) {
-			if (minipro_begin_transaction(handle))
+			if (begin_transaction(handle))
 				return EXIT_FAILURE;
 			if (verify_page_file(handle, MP_DATA,
 					     handle->device->data_memory_size))
@@ -3025,7 +3279,7 @@ int action_verify(minipro_handle_t *handle)
 		    (handle->cmdopts->page == USER ||
 		     (handle->cmdopts->page == UNSPECIFIED &&
 		      !handle->cmdopts->filename))) {
-			if (minipro_begin_transaction(handle))
+			if (begin_transaction(handle))
 				return EXIT_FAILURE;
 			if (verify_page_file(handle, MP_USER,
 					     handle->device->data_memory2_size))
@@ -3043,93 +3297,70 @@ int action_verify(minipro_handle_t *handle)
 	return ret;
 }
 
+/* Program Main entry point */
 int main(int argc, char **argv)
 {
+/* If we are in windows start the VT100 support.
+*  Set the Windows translation mode to binary.
+*/
 #ifdef _WIN32
-	system(" "); /* If we are in windows start the VT100 support */
-	/* Set the Windows translation mode to binary */
+	system(" ");
 	setmode(STDOUT_FILENO, O_BINARY);
 	setmode(STDIN_FILENO, O_BINARY);
 #endif
 
 	cmdopts_t cmdopts;
+
+	/* Parse the command line first */
 	parse_cmdline(argc, argv, &cmdopts);
 
-	/* Check if a file name is required */
-	switch (cmdopts.action) {
-	case LOGIC_IC_TEST:
-		break;
-	case READ:
-	case WRITE:
-	case VERIFY:
-		if (!cmdopts.filename && !cmdopts.idcheck_only) {
-			fprintf(stderr,
-				"A file name is required for this action.\n");
-			print_help_and_exit(argv[0]);
-		}
-		break;
-	default:
-		break;
-	}
-
-	/* Check if a device name is required */
-	if (!cmdopts.device_name) {
-		fprintf(stderr,
-			"Device required. Use -p <device> to specify a device.\n");
-		print_help_and_exit(argv[0]);
-	}
-
-	/* don't permit skipping the ID read in write/erase-mode or ID
-	 * only mode */
-	if ((cmdopts.action == WRITE || cmdopts.action == ERASE ||
-	     cmdopts.idcheck_only) &&
-	    cmdopts.idcheck_skip) {
-		fprintf(stderr,
-			"Skipping the ID check is not permitted for this action.\n");
-		print_help_and_exit(argv[0]);
-	}
-
-	/* Exit if no action is supplied */
-	if (cmdopts.action == NO_ACTION && !cmdopts.idcheck_only &&
-	    !cmdopts.pincheck) {
-		fprintf(stderr, "No action to perform.\n");
-		print_help_and_exit(argv[0]);
-	}
-
-	/* Set the pipe flag */
-	if (cmdopts.filename)
-		cmdopts.is_pipe = (!strcmp(cmdopts.filename, "-"));
-
-	/* get a handle */
+	/* Get a minipro handle */
 	minipro_handle_t *handle = minipro_open(VERBOSE);
 	if (!handle)
 		return EXIT_FAILURE;
 	handle->cmdopts = &cmdopts;
+
+	/* Exit if bootloader is active */
+	minipro_print_system_info(handle);
+	if (handle->status == MP_STATUS_BOOTLOADER) {
+		fprintf(stderr, "Exiting...\n");
+		minipro_close(handle);
+		return EXIT_FAILURE;
+	}
+	fprintf(stderr, "\n");
 
 	/* Get the requested device */
 	if (get_device(handle)) {
 		minipro_close(handle);
 		return EXIT_FAILURE;
 	}
+	device_t *device = handle->device;
 
-	/* Exit if bootloader is active */
-	minipro_print_system_info(handle);
-	if (handle->status == MP_STATUS_BOOTLOADER) {
-		fprintf(stderr, "in bootloader mode!\nExiting...\n");
+	/* Check for unsupported devices */
+	switch (device->chip_type) {
+	case MP_SRAM:
+	case MP_NAND:
+	case MP_EMMC:
+	case MP_VGA:
 		minipro_close(handle);
+		fprintf(stderr, "This chip is not supported yet.\n");
 		return EXIT_FAILURE;
 	}
 
 	/* Parse programming options */
 	if (parse_options(handle, argc, argv)) {
 		if (strlen(optarg))
-			fprintf(stderr, "Invalid option '%s'\n", optarg);
+			fprintf(stderr, "\nInvalid option '%s'\n",
+				argv[optind - 1]);
 		minipro_close(handle);
 		print_help_and_exit(argv[0]);
 	}
 
+	/* Run a bad pin contact test if requested. */
 	if (cmdopts.pincheck) {
-		if (handle->version == MP_TL866IIPLUS && !cmdopts.icsp) {
+		if ((handle->version == MP_TL866IIPLUS ||
+		     handle->version == MP_T76) &&
+		    !cmdopts.icsp) {
 			if (minipro_pin_test(handle)) {
 				minipro_end_transaction(handle);
 				minipro_close(handle);
@@ -3141,229 +3372,96 @@ int main(int argc, char **argv)
 			return EXIT_SUCCESS;
 	}
 
+	/* Perform a logic chip test and exit */
 	if (cmdopts.action == LOGIC_IC_TEST) {
-		if (minipro_logic_ic_test(handle)) {
-			minipro_close(handle);
-			return EXIT_FAILURE;
-		}
+		int ret = minipro_logic_ic_test(handle);
 		minipro_close(handle);
-		return EXIT_SUCCESS;
+		return ret;
 	}
 
-	/* Check for GAL/PLD */
-	if (handle->device->chip_type != MP_PLD &&
-	    !handle->device->read_buffer_size) {
+	/* Handle adapters if applicable */
+	if(check_adapter(handle)){
 		minipro_close(handle);
-		fprintf(stderr, "Unsupported device!\n");
-		return EXIT_FAILURE;
-	}
-
-	/* Check for NAND devices */
-	if (handle->device->chip_type == MP_NAND) {
-		minipro_close(handle);
-		fprintf(stderr, "NAND chips not supported yet.\n");
-		return EXIT_FAILURE;
-	}
-
-	/* Unlocking the TSOP48 adapter (if applicable) */
-	uint8_t status;
-	switch (handle->device->package_details.adapter) {
-	case TSOP48_ADAPTER:
-	case SOP44_ADAPTER:
-	case SOP56_ADAPTER:
-		if (minipro_unlock_tsop48(handle, &status)) {
-			minipro_close(handle);
-			return EXIT_FAILURE;
-		}
-		switch (status) {
-		case MP_TSOP48_TYPE_V3:
-			fprintf(stderr, "Found TSOP adapter V3\n");
-			break;
-		case MP_TSOP48_TYPE_NONE:
-			/* Needed to turn off the power on the ZIF socket. */
-			minipro_end_transaction(handle);
-			minipro_close(handle);
-			fprintf(stderr, "TSOP adapter not found!\n");
-			return EXIT_FAILURE;
-		case MP_TSOP48_TYPE_V0:
-			fprintf(stderr, "Found TSOP adapter V0\n");
-			break;
-		case MP_TSOP48_TYPE_FAKE1:
-		case MP_TSOP48_TYPE_FAKE2:
-			fprintf(stderr, "Fake TSOP adapter found!\n");
-			break;
-		}
-		minipro_end_transaction(handle);
-		break;
 	}
 
 	/* Activate ICSP if the chip can only be programmed via ICSP. */
-	if (handle->device->flags.prog_support == MP_ICSP_ONLY) {
+	if (device->flags.prog_support == MP_ICSP_ONLY) {
 		handle->cmdopts->icsp = MP_ICSP_ENABLE | MP_ICSP_VCC;
-	} else if (handle->device->flags.prog_support == MP_ZIF_ONLY)
+	} else if (device->flags.prog_support == MP_ZIF_ONLY)
 		handle->cmdopts->icsp = 0x00;
 	if (handle->cmdopts->icsp)
 		fprintf(stderr, "Activating ICSP...\n");
-	if (cmdopts.icsp && handle->device->flags.prog_support == MP_ZIF_ONLY)
+	if (cmdopts.icsp && device->flags.prog_support == MP_ZIF_ONLY)
 		fprintf(stderr,
 			"Warning: ICSP is not supported by this chip.\n");
 
-	uint8_t id_type;
 	/* Verifying Chip ID (if applicable) */
 	if (cmdopts.idcheck_skip) {
 		fprintf(stderr, "WARNING: skipping Chip ID test\n");
-	} else if (handle->device->flags.has_chip_id) {
-		if (minipro_begin_transaction(handle)) {
+	} else if (device->flags.has_chip_id) {
+		if (check_chip_id(handle)) {
 			minipro_close(handle);
 			return EXIT_FAILURE;
-		}
-		uint32_t chip_id;
-		if (minipro_get_chip_id(handle, &id_type, &chip_id)) {
-			minipro_close(handle);
-			return EXIT_FAILURE;
-		}
-		if (minipro_end_transaction(handle)) {
-			minipro_close(handle);
-			return EXIT_FAILURE;
-		}
-		uint32_t chip_id_temp = chip_id;
-		uint8_t shift = 0;
-		fuse_decl_t *config = ((fuse_decl_t *)handle->device->config);
-		/* The id_type will tell us the Chip ID type. There are 5 types */
-		uint32_t ok = 0;
-		switch (id_type) {
-		case MP_ID_TYPE1: /* 1-3 bytes ID */
-		case MP_ID_TYPE2: /* 4 bytes ID */
-		case MP_ID_TYPE5: /* 3 bytes ID, this ID type is returning
-				   * from 25 SPI series. */
-			ok = (chip_id == handle->device->chip_id);
-			if (ok) {
-				fprintf(stderr, "Chip ID: 0x%04X  OK\n",
-					chip_id);
-			}
-			break;
-		case MP_ID_TYPE3: /* Microchip controllers with 5 bit
-				   * revision number. */
-			ok = (handle->device->chip_id >> 5 ==
-			      (chip_id >>
-			       5)); /* Throw the chip revision (last 5 bits). */
-			if (ok) {
-				fprintf(stderr,
-					"Chip ID: 0x%04X, Rev.0x%02X  OK\n",
-					chip_id >> 5, chip_id & 0x1F);
-			}
-			chip_id >>= 5;
-			chip_id_temp = chip_id << 5;
-			shift = 5;
-			break;
-		case MP_ID_TYPE4: /* Microchip controllers with 4-5 bit
-				   * revision number. */
-			ok = (handle->device->chip_id >> config->rev_bits ==
-			      (chip_id >>
-			       config->rev_bits)); /* Throw the chip revision
-						    * (last rev_mask bits). */
-			if (ok) {
-				fprintf(stderr,
-					"Chip ID: 0x%04X, Rev.0x%02X  OK\n",
-					chip_id >> config->rev_bits,
-					chip_id & ~(0xFF << config->rev_bits));
-			}
-			chip_id >>= config->rev_bits;
-			chip_id_temp = chip_id << config->rev_bits;
-			shift = config->rev_bits;
-			break;
-		}
-
-		if (cmdopts.idcheck_only && ok) {
+		} else if (cmdopts.idcheck_only) {
 			minipro_close(handle);
 			return EXIT_SUCCESS;
 		}
-
-		if (!ok) {
-			db_data_t db_data;
-			memset(&db_data, 0, sizeof(db_data));
-			db_data.logicic_path = cmdopts.logicic_path;
-			db_data.infoic_path = cmdopts.infoic_path;
-			db_data.version = handle->version;
-			db_data.chip_id = chip_id_temp;
-			db_data.protocol = handle->device->protocol_id;
-			const char *name = get_device_from_id(&db_data);
-			if (cmdopts.idcheck_only) {
-				fprintf(stderr,
-					"Chip ID mismatch: expected 0x%04X, got 0x%04X (%s)\n",
-					handle->device->chip_id >> shift,
-					chip_id_temp >> shift,
-					name ? name : "unknown");
-				minipro_close(handle);
-				if (name)
-					free((char *)name);
-				return EXIT_FAILURE;
-			}
-			if (cmdopts.idcheck_continue) {
-				fprintf(stderr,
-					"WARNING: Chip ID mismatch: expected 0x%04X, got 0x%04X (%s)\n",
-					handle->device->chip_id >> shift,
-					chip_id_temp >> shift,
-					name ? name : "unknown");
-			} else {
-				fprintf(stderr,
-					"Invalid Chip ID: expected 0x%04X, got 0x%04X (%s)\n(use '-y' "
-					"to continue anyway at your own risk)\n",
-					handle->device->chip_id >> shift,
-					chip_id_temp >> shift,
-					name ? name : "unknown");
-				minipro_close(handle);
-				if (name)
-					free((char *)name);
-				return EXIT_FAILURE;
-			}
-			if (name)
-				free((char *)name);
+	} else {
+		if (cmdopts.idcheck_only) {
+			fprintf(stderr, "This chip doesn't have a chip ID!\n");
+			minipro_close(handle);
+			return EXIT_FAILURE;
 		}
-
-	} else if (cmdopts.idcheck_only) {
-		minipro_close(handle);
-		fprintf(stderr, "This chip doesn't have a chip ID!\n");
-		return EXIT_FAILURE;
 	}
+
+	/* Print programming options */
+	print_options(handle);
 
 	/* Performing requested action */
 	int ret;
 	switch (cmdopts.action) {
+
+	/* Read action */
 	case READ:
 		ret = action_read(handle);
 		break;
+
+	/* Write action */
 	case WRITE:
-		if (handle->device->flags.prog_support == MP_READ_ONLY) {
+		if (device->flags.prog_support == MP_READ_ONLY) {
 			fprintf(stderr, "Read-only chip.\n");
 			minipro_close(handle);
 			return EXIT_FAILURE;
 		}
 		/* Print a warning about write-protection */
-		if(handle->device->flags.protect_after &&
-		   !handle->cmdopts->protect_on) {
+		if (device->flags.protect_after &&
+		    !handle->cmdopts->protect_on) {
 			fprintf(stderr,
 				"Use -P if you want to write-protect this chip.\n");
 		}
 		ret = action_write(handle);
 		/* Print a warning about write-protection */
-		if(ret == EXIT_FAILURE && handle->device->flags.off_protect_before &&
-		   !handle->cmdopts->protect_off) {
+		if (ret == EXIT_FAILURE && device->flags.off_protect_before &&
+		    !handle->cmdopts->protect_off) {
 			fprintf(stderr,
 				"This chip may be write-protected. Use -u and try again.\n");
 		}
 		break;
+
+	/* Verify/Blank check action */
 	case VERIFY:
 	case BLANK_CHECK:
 		ret = action_verify(handle);
 		break;
+
+	/* Erase action */
 	case ERASE:
-		if (!handle->device->flags.can_erase) {
+		if (!device->flags.can_erase) {
 			fprintf(stderr, "This chip can't be erased!\n");
 			minipro_close(handle);
 			return EXIT_FAILURE;
 		}
-		if (minipro_begin_transaction(handle)) {
+		if (begin_transaction(handle)) {
 			minipro_close(handle);
 			return EXIT_FAILURE;
 		}
@@ -3374,6 +3472,7 @@ int main(int argc, char **argv)
 		break;
 	}
 
+	/* End session */
 	if (minipro_end_transaction(handle)) {
 		minipro_close(handle);
 		return EXIT_FAILURE;
