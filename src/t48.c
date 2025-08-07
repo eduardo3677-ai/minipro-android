@@ -280,8 +280,11 @@ int t48_begin_transaction(minipro_handle_t *handle)
 		if (device->voltages.raw_voltages & 0x80000000)
 			msg[22] = (device->voltages.raw_voltages >> 16) & 0x0f;
 
-		msg[24] = 1;    // need to set it to 1 in order for byte[28] to take the desired effect 
-		msg[28] = handle->cmdopts->spi_speed;
+		/* SPI clock  if supported or zero */
+		if (device->flags.can_adjust_clock) {
+            msg[24] = 1; // need to set it to 1 in order for byte[28] to take the desired effect
+			msg[28] = device->spi_clock;
+		}
 
 		format_int(&(msg[40]),
 			   handle->device->package_details.packed_package, 4,
