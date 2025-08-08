@@ -554,6 +554,7 @@ void print_device_info_and_exit(cmdopts_t *cmdopts)
 				       device->vcc_logic_table);
 	} else {
 		/* Availability */
+        int c, all;
 		fprintf(stderr, "Available on: ");
 		switch (handle->version) {
 		case MP_TL866A:
@@ -563,8 +564,8 @@ void print_device_info_and_exit(cmdopts_t *cmdopts)
 			fprintf(stderr, "T76\n");
 			break;
 		default:
-			int c = 0;
-			int all = (!device->tl866_only && !device->t48_only &&
+			c = 0;
+			all = (!device->tl866_only && !device->t48_only &&
 				   !device->t56_only);
 			if (all || device->tl866_only) {
 				fprintf(stderr, "TL866II");
