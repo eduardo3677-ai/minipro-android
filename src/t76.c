@@ -92,7 +92,6 @@
 /* Write FPGA */
 static int t76_write_bitstream(minipro_handle_t *handle)
 {
-	return EXIT_SUCCESS;
 	/* Send the bitstream algorithm to the T76.
 	 * First send the begin bitstream command.
 	 * We must specify the packet size used and total bitstream size
@@ -275,7 +274,6 @@ int t76_end_transaction(minipro_handle_t *handle)
 /* Specific to T76. Sends a reset FPGA command */
 int t76_reset_fpga(minipro_handle_t *handle)
 {
-    return EXIT_SUCCESS;
 	/* Reset FPGA */
 	uint8_t msg[8] = { 0 };
 	msg[0] = T76_WRITE_BITSTREAM;
