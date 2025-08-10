@@ -334,7 +334,7 @@ int write_payload2(void *usb_handle, uint8_t *buffer, size_t length, size_t limi
 		if (bytes_transferred == length)
 			return status;
 
-		fprintf(stderr, "%s: short write %d/%lu\n", __func__, bytes_transferred, length);
+		fprintf(stderr, "%s: short write %d/%zu\n", __func__, bytes_transferred, length);
 		return EXIT_FAILURE;
 	}
 

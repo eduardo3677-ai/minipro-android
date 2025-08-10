@@ -1285,7 +1285,7 @@ static int pwr_init(minipro_handle_t *handle, uint8_t *vector, size_t pin_count)
 					      sizeof(gnd_pins) /
 						      sizeof(gnd_pins[0]));
 			if (!pwr_pin) {
-				fprintf(stderr, "Pin %lu not supported for GND on TL866A/CS!\n", i + 1);
+				fprintf(stderr, "Pin %zu not supported for GND on TL866A/CS!\n", i + 1);
 				return EXIT_FAILURE;
 			}
 			pwr[(pwr_pin->latch - 2) * 2 + 10] |= pwr_pin->mask;
@@ -1294,7 +1294,7 @@ static int pwr_init(minipro_handle_t *handle, uint8_t *vector, size_t pin_count)
 					      sizeof(vcc_pins) /
 						      sizeof(vcc_pins[0]));
 			if (!pwr_pin) {
-				fprintf(stderr, "Pin %lu not supported for VCC on TL866A/CS!\n", i + 1);
+				fprintf(stderr, "Pin %zu not supported for VCC on TL866A/CS!\n", i + 1);
 				return EXIT_FAILURE;
 			}
 			pwr[(pwr_pin->latch - 2) * 2 + 10] &= pwr_pin->mask;
