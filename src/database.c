@@ -446,14 +446,16 @@ static int tagcmpn(const char *tag, size_t taglen, const char *str)
 
 	/* Find the start of substring */
 	for (; taglen; taglen--, tag++) {
-		if (isprint(*tag) && !isspace(*tag))
+		if (isprint((unsigned char)*tag) &&
+		    !isspace((unsigned char)*tag))
 			break;
 	}
 
 	/* Find the end of substring */
 	size_t len = 0;
 	for (; taglen; taglen--, len++) {
-		if (iscntrl(tag[len]) || isspace(tag[len]))
+		if (iscntrl((unsigned char)tag[len]) ||
+		    isspace((unsigned char)tag[len]))
 			break;
 	}
 

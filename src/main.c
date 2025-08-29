@@ -17,7 +17,6 @@
 
 #define _GNU_SOURCE
 
-#include <ctype.h>
 #include <errno.h>
 #include <libgen.h>
 #include <signal.h>
