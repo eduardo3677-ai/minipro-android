@@ -57,6 +57,11 @@ sudo yum install gcc make pkgconfig git libusbx-devel
 sudo zypper install gcc make git-core srecord rpmdevtools libusb-1_0-devel
 ```
 
+#### Fedora
+```nohighlight
+sudo dnf install make pkg-config git gcc libusb1-devel zlib-ng-compat-devel
+```
+
 ### Checkout source code and compile 
 ```nohighlight
 git clone https://gitlab.com/DavidGriffith/minipro.git
