@@ -18,8 +18,8 @@
 #ifndef __T76_H
 #define __T76_H
 
-#define T76_FIRMWARE_VERSION 0x109
-#define T76_FIRMWARE_STRING  "00.1.09"
+#define T76_FIRMWARE_VERSION 0x10D
+#define T76_FIRMWARE_STRING  "00.1.13"
 
 /* T76 low level functions. */
 int t76_begin_transaction(minipro_handle_t *handle);

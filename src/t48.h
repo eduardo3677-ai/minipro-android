@@ -18,8 +18,8 @@
 #ifndef __T48_H
 #define __T48_H
 
-#define T48_FIRMWARE_VERSION 0x122
-#define T48_FIRMWARE_STRING  "01.1.34"
+#define T48_FIRMWARE_VERSION 0x123
+#define T48_FIRMWARE_STRING  "01.1.35"
 
 /* T48 low level functions. */
 int t48_begin_transaction(minipro_handle_t *handle);
