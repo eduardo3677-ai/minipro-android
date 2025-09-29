@@ -43,6 +43,7 @@
 #define T56_WRITE_CODE		 0x0C
 #define T56_READ_CODE		 0x0D
 #define T56_ERASE		 0x0E
+#define T56_TEST_RAM		 0x0F
 #define T56_READ_DATA		 0x10
 #define T56_WRITE_DATA		 0x11
 #define T56_WRITE_LOCK		 0x14
@@ -634,6 +635,7 @@ static uint8_t *do_ic_test(minipro_handle_t *handle, int pull)
 
 int t56_logic_ic_test(minipro_handle_t *handle)
 {
+	uint8_t req[18] = { T56_TEST_RAM, 1, 4, 0,  0, 0, 0, 0,  1, 1, 1, 1, };
 	uint8_t *vector = handle->device->vectors;
 	uint8_t *first_step = NULL;
 	uint8_t *second_step = NULL;
@@ -644,6 +646,9 @@ int t56_logic_ic_test(minipro_handle_t *handle)
 		fprintf(stderr, "An error occurred while sending bitstream.\n");
 		return EXIT_FAILURE;
 	}
+
+	if (handle->device->chip_type == MP_SRAM)
+		return minipro_test_ram_generic(handle, req, sizeof (req));
 
 	if (!(first_step = do_ic_test(handle, 0))) { /* Pull-up active */
 		fprintf(stderr,

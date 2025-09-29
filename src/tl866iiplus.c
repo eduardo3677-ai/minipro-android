@@ -43,6 +43,7 @@
 #define TL866IIPLUS_WRITE_CODE		 0x0C
 #define TL866IIPLUS_READ_CODE		 0x0D
 #define TL866IIPLUS_ERASE		 0x0E
+#define TL866IIPLUS_TEST_RAM		 0x0F
 #define TL866IIPLUS_READ_DATA		 0x10
 #define TL866IIPLUS_WRITE_DATA		 0x11
 #define TL866IIPLUS_WRITE_LOCK		 0x14
@@ -1155,10 +1156,14 @@ static uint8_t *do_ic_test(minipro_handle_t *handle, int pull)
 
 int tl866iiplus_logic_ic_test(minipro_handle_t *handle)
 {
+	uint8_t req[18] = { TL866IIPLUS_TEST_RAM, 1, 4, 0,  0, 0, 0, 0,  1, 1, 1, 1, };
 	uint8_t *vector = handle->device->vectors;
 	uint8_t *first_step = NULL;
 	uint8_t *second_step = NULL;
 	int ret = EXIT_FAILURE;
+
+	if (handle->device->chip_type == MP_SRAM)
+		return minipro_test_ram_generic(handle, req, sizeof (req));
 
 	if (!(first_step = do_ic_test(handle, 0))) { /* Pull-up active */
 		fprintf(stderr,

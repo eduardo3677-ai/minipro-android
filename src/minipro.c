@@ -629,6 +629,42 @@ void minipro_print_system_info(minipro_handle_t *handle)
 			      "");
 }
 
+enum ram_status { RAM_S_ERROR = 0x20 };
+enum ram_reason { RAM_R_DBUS = 1, RAM_R_AOPEN, RAM_R_ASHORT, RAM_R_CELL, RAM_R_INCR };
+
+int minipro_test_ram_generic(minipro_handle_t *handle, const uint8_t *req, size_t len)
+{
+	uint8_t ans[64];
+
+	fprintf(stderr, "Testing RAM of %s: ", handle->device->name);
+
+	if (minipro_begin_transaction(handle) ||
+	    msg_send(handle->usb_handle, (void *) req, len) ||
+	    msg_recv(handle->usb_handle, ans, sizeof (ans)))
+		goto error;
+
+	const uint8_t status = ans[0], reason = ans[1];
+	const uint32_t addr = load_int(ans + 8, 4, MP_LITTLE_ENDIAN);
+
+	if (status != RAM_S_ERROR) {
+		fprintf(stderr, "All tests passed.\n");
+		minipro_end_transaction(handle);
+		return EXIT_SUCCESS;
+	}
+
+	switch (reason) {
+	case RAM_R_DBUS:    fprintf(stderr, "Data bus error\n");			break;
+	case RAM_R_AOPEN:   fprintf(stderr, "Open circuit detected at A%u\n", addr);	break;
+	case RAM_R_ASHORT:  fprintf(stderr, "Short circuit detected at A%u\n", addr);	break;
+	case RAM_R_CELL:    fprintf(stderr, "Cell test failed at 0x%X\n", addr);	break;
+	case RAM_R_INCR:    fprintf(stderr, "Increment test failed at 0x%X\n", addr);	break;
+	default:            fprintf(stderr, "Unknown error %u\n", reason);		break;
+	}
+error:
+	minipro_end_transaction(handle);
+	return EXIT_FAILURE;
+}
+
 int minipro_begin_transaction(minipro_handle_t *handle)
 {
 	assert(handle != NULL);
@@ -887,7 +923,8 @@ int minipro_logic_ic_test(minipro_handle_t *handle)
 {
 	assert(handle != NULL);
 
-	if (handle->device->vector_count == 0) {
+	if (handle->device->vector_count == 0 &&
+	    handle->device->chip_type != MP_SRAM) {
 		fprintf(stderr, "%s: test vectors are not defined for this device type.\n",
 			handle->device->name);
 		return EXIT_FAILURE;

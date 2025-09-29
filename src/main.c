@@ -3338,7 +3338,6 @@ int main(int argc, char **argv)
 
 	/* Check for unsupported devices */
 	switch (device->chip_type) {
-	case MP_SRAM:
 	case MP_NAND:
 	case MP_EMMC:
 	case MP_VGA:
