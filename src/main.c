@@ -1380,7 +1380,7 @@ int write_page_ram(minipro_handle_t *handle, uint8_t *buffer, uint8_t type,
 				  0;
 
 	/* Initialize progress reporting */
-	progress_status("Writing  %s...  ", -1, 0, name);
+	progress_status("Writing %s...  ", -1, 0, name);
 
 	for (size_t i = 0; i < ds.block_count; i++) {
 		/* Translating address to protocol-specific */
