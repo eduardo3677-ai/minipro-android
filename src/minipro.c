@@ -886,6 +886,13 @@ int minipro_pin_test(minipro_handle_t *handle)
 int minipro_logic_ic_test(minipro_handle_t *handle)
 {
 	assert(handle != NULL);
+
+	if (handle->device->vector_count == 0) {
+		fprintf(stderr, "%s: test vectors are not defined for this device type.\n",
+			handle->device->name);
+		return EXIT_FAILURE;
+	}
+
 	if (handle->minipro_logic_ic_test) {
 		return handle->minipro_logic_ic_test(handle);
 	}
