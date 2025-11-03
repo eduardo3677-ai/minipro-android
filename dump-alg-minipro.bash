@@ -21,14 +21,13 @@
 # Prerequisites:
 #   bash, bsdtar, sha256sum, wget or curl, and base64.
 
-XGPRO_RAR=xgproV1278_Setup.rar
-XGPRO_RAR2=XgproV1278_Setup.exe
-XGPRO_T76_RAR=xgpro_T76_V1291.rar
-XGPRO_T76_RAR2=Xgpro_T76_V1291.exe
-XGPRO_URL=https://github.com/Kreeblah/XGecu_Software/raw/refs/heads/master/Xgpro/12
-XGPRO_SHA256=cf5dd2771aa3b5af46e09c2eabc05bdb56362dd2719c348e287fa91d93b8eec9
-#XGPRO_T76_SHA256=483f7f8b7a5160865ef43d81b59117f579edbb0742b88eee3c4ba3718ae961a7
-XGPRO_T76_SHA256=203ffaf47c4c016acde67daa80db04fffb89fdebe0aa812f92e843c0b4231437
+XGPRO_RAR=xgproV1304_T48_T56_T866II_Setup.rar
+XGPRO_RAR2=XgproV1304_T48_T56_T866II_Setup.exe
+XGPRO_T76_RAR=xgpro_T76_V1303A.rar
+XGPRO_T76_RAR2=Xgpro_T76_V1303A.exe
+XGPRO_URL=https://github.com/Kreeblah/XGecu_Software/raw/refs/heads/master/Xgpro/13
+XGPRO_SHA256=821db3ef1cc2b335d8a1e50ad37161032f804c8626cd3c1e7d03695d9aa75b1d
+XGPRO_T76_SHA256=493024ac8951f733e34b42cac66d873ef77f9e12e3547c6f1e5e295d0061f1aa
 
 WORKDIR=`pwd`
 XGPRO_ALG="algorithm"
@@ -37,12 +36,12 @@ ALG_FILENAME="algorithm.xml"
 
 FIRMWARE_NAMES=("updateII.dat" "UpdateT48.dat" "updateT56.dat")
 FIRMWARE_TYPE=("TL866II+" "T48" "T56")
-FIRMWARE_VERSIONS=("04.2.105" "01.1.32" "01.1.73")
+FIRMWARE_VERSIONS=("04.2.132" "01.1.35" "01.1.73")
 FIRMWARE_COUNT=3
 
 T76_FIRMWARE_NAME="UpdateT76.Dat"
 T76_FIRMWARE_TYPE="T76"
-T76_FIRMWARE_VERSION="00.1.08"
+T76_FIRMWARE_VERSION="00.1.13"
 
 
 
