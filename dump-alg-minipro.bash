@@ -227,7 +227,7 @@ fi
 echo "** SHA256 checksum is good."
 
 echo "** Extracting."
-$TAR -x --to-stdout -f $WORKDIR/$XGPRO_RAR \
+$TAR -x -O -f $WORKDIR/$XGPRO_RAR \
 	| $TAR -x -f -  ${FIRMWARE_NAMES[*]} $XGPRO_ALG/*.alg
 
 echo "** Checking $XGPRO_T76_RAR."
@@ -241,7 +241,7 @@ fi
 echo "** SHA256 checksum is good."
 
 echo "** Extracting."
-$TAR -x --to-stdout -f $WORKDIR/$XGPRO_T76_RAR \
+$TAR -x -O -f $WORKDIR/$XGPRO_T76_RAR \
 	| $TAR -x -f -  $T76_FIRMWARE_NAME $XGPRO_T76_ALG/*.alg
 
 
