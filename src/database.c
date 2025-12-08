@@ -48,7 +48,9 @@
 #define MP_LOCK_BIT_WRITE_ONLY	 0x00040000
 #define MP_CALIBRATION		 0x00080000
 #define MP_SUPPORTED_PROGRAMMING 0x00300000
-#define MP_DATA_ORG		 0x03000000
+//#define MP_DATA_ORG 0x03000000
+#define MP_DATA_ORG MP_DATA_BUS_WIDTH
+
 
 /* Opts chip_info */
 #define MP_VOLTAGES1		 0x0006
@@ -665,9 +667,12 @@ static int load_mem_device(db_data_t *db_data, const char *xml_device,
 	device->flags.lock_bit_write_only = (flags & MP_LOCK_BIT_WRITE_ONLY) !=
 					    0;
 	device->flags.has_calibration = (flags & MP_CALIBRATION) != 0;
-	device->flags.prog_support = (flags & MP_SUPPORTED_PROGRAMMING) >> 20;
-	device->flags.data_org = (flags & MP_DATA_ORG) >> 24;
-	device->flags.word_size = (flags & MP_DATA_ORG) == 0x01000000 ? 2 : 1;
+	device->flags.prog_support = (flags & MP_SUPPORTED_PROGRAMMING) >> 20;	
+	//device->flags.data_org = (flags & MP_DATA_ORG) >> 24;
+	device->flags.data_org = (flags & MP_DATA_ORG) ? 1 : 0;	
+	//device->flags.word_size = (flags & MP_DATA_ORG) == 0x01000000 ? 2 : 1;
+	device->flags.word_size = (flags & MP_DATA_ORG) ? 2 : 1;
+	
 	device->flags.can_adjust_vcc = (device->chip_info == MP_VOLTAGES1);
 	device->flags.can_adjust_vpp = (device->chip_info == MP_VOLTAGES2);
 	device->flags.has_power_down =
