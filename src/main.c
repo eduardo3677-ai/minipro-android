@@ -2928,6 +2928,16 @@ int action_read(minipro_handle_t *handle)
 	     (handle->cmdopts->page == UNSPECIFIED &&
 	      !handle->cmdopts->is_pipe)) &&
 	    handle->device->data_memory_size) {
+/* T56 needs to restart transaction when reading code and data memory in sequence */
+    if(handle->version == MP_T56 && 
+      handle->cmdopts->page == UNSPECIFIED){
+    if (minipro_end_transaction(handle)) {
+      minipro_close(handle);
+      return EXIT_FAILURE;
+    }	
+    if (begin_transaction(handle))
+      return EXIT_FAILURE;
+    }
 		handle->cmdopts->filename = data_filename;
 		if (read_page_file(handle, MP_DATA,
 				   handle->device->data_memory_size)) {
