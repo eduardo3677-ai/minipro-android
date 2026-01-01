@@ -1180,11 +1180,13 @@ int parse_options(minipro_handle_t *handle, int argc, char **argv)
 						       VCC_VOLTAGE))
 					return EXIT_FAILURE;
 			} else if (!strcasecmp(option, "spi_clock")) {
+				handle->cmdopts->set_spi_clock = 1;
+				if (!device->flags.can_adjust_clock)
+					break;
 				if (set_parameter(handle, value,
 						  &device->spi_clock,
 						  SPI_CLOCK))
-					handle->cmdopts->set_spi_clock = 1;
-				return EXIT_FAILURE;
+					return EXIT_FAILURE;
 			} else
 				return EXIT_FAILURE;
 			break;
