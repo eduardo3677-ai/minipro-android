@@ -125,7 +125,10 @@ Set the programming voltage.
 For TL866A/CS: 10, 12.5, 13.5, 14, 15.5, 16, 17, 18, 21.
 .br
 For TL866II+: 9, 9.5, 10, 11, 11.5, 12, 12.5, 13, 13.5, 14, 14.5, 15.5,
-16, 16.5, 17, 19.
+16, 16.5, 17, 18.
+.br
+For T48/T56/T76: 9, 9.5, 10, 11, 11.5, 12, 12.5, 13, 13.5, 14, 14.5, 15.5,
+16, 16.5, 17, 18, 21, 25.
 
 .TP
 .B \-o vdd=<value>,  \-\-vdd <value>
@@ -142,8 +145,20 @@ For setting the VCC logic test voltage (1.8, 2.5, 3.3, 5).
 Programming pulse delay (0\(en65535 usec).
 
 .TP
-.B \-o speed=<value>,  \-\-speed <value>
-Set T48 SPI clock frequency in MHz (3, 7.5, 15, 30).
+.B \-o spi_clock=<value>,  \-\-spi_clock <value>
+Set SPI clock frequency in MHz.
+.br
+For T48: 4, 8, 15, 30.
+.br
+For T56: 8, 16, 25, 50.
+.br
+For T76: 4, 8, 16, 24, 30, 40, 50, 60 (for SPI25F devices) or 0.5, 1, 2, 3, 4 (for other SPI devices).
+
+.TP
+.B \-o address=<value>,  \-\-address <value>
+Set I2C slave address for 24C devices (T76 only).
+.br
+Value is a hexadecimal number (e.g., 0xA0).
 .RE
 
 .TP
@@ -308,7 +323,7 @@ various chips.  These FPGAs require bitstreams (algorithms) to be loaded
 before they're able to do any work.  The TL866A/CS, TL866II+, and T48
 keep their algorithms on a memory chip on the programmer's circuit
 boards and are updated whenever the programmer's firmware is updated.
-The T56 and T76 is different in that it requires its algorithms to be
+The T56 and T76 are different in that they require their algorithms to be
 loaded from the controlling program.  Those algorithms are installed by
 the official Xgecu software to the host computer.  Because of the
 copyright on that package, the algorithms cannot be included in the
@@ -502,6 +517,13 @@ Write the contents of
 to an AT29C256 256 kilobit (32-kilobytes) electrically-erasable Flash
 EPROM.  Remember to put single or double quotes around the device name
 to prevent the shell from interpreting the "@" (at sign).
+
+.B minipro \-p "W25Q32JV@SOIC8" \-w foobar.bin \-o spi_clock=30
+.br
+Write the contents of
+.B foobar.bin
+to a W25Q32JV SPI Flash chip using a 30 MHz SPI clock (T48 used in
+the example).
 
 .SH CAVEATS
 The TL866A and TL866CS programmers appear to have a firmware bug such
