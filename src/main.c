@@ -1663,7 +1663,7 @@ int erase_device(minipro_handle_t *handle)
 int check_chip_id(minipro_handle_t *handle)
 {
 	uint8_t id_type;
-	uint32_t chip_id, chip_id_temp = 0;
+	uint32_t chip_id, chip_id_temp;
 	uint8_t shift = 0;
 	device_t *device = handle->device;
 	cmdopts_t *cmdopts = handle->cmdopts;
@@ -1675,7 +1675,7 @@ int check_chip_id(minipro_handle_t *handle)
 	    minipro_end_transaction(handle)) {
 		return EXIT_FAILURE;
 	}
-
+	chip_id_temp = chip_id;
 	/* Parse chip ID */
 	switch (id_type) {
 	case MP_ID_TYPE1:
