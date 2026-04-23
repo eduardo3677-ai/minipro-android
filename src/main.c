@@ -80,6 +80,7 @@ static struct option long_options[] = {
 	{ "read", required_argument, NULL, 'r' },
 	{ "verify", required_argument, NULL, 'm' },
 	{ "blank_check", no_argument, NULL, 'b' },
+	{ "skip_blank", no_argument, NULL, 'B' },
 	{ "erase", no_argument, NULL, 'E' },
 	{ "read_id", no_argument, NULL, 'D' },
 	{ "page", required_argument, NULL, 'c' },
@@ -772,7 +773,7 @@ void parse_cmdline(int argc, char **argv, cmdopts_t *cmdopts)
 	long_options[7].flag = &cmdopts->filter_uid;
 	long_options[8].flag = &cmdopts->filter_locks;
 	while ((c = getopt_long(argc, argv,
-				"lL:q:Qkd:ea:zEbTuPvxyr:w:m:p:c:o:iIsSVhDtf:F:",
+				"lL:q:Qkd:ea:zEbBTuPvxyr:w:m:p:c:o:iIsSVhDtf:F:",
 				long_options, NULL)) != -1) {
 		switch (c) {
 		case 0:
@@ -924,6 +925,10 @@ void parse_cmdline(int argc, char **argv, cmdopts_t *cmdopts)
 
 		case 'b':
 			cmdopts->action = BLANK_CHECK;
+			break;
+
+		case 'B':
+			cmdopts->blank_skip = 1;
 			break;
 
 		case 'T':
@@ -1360,6 +1365,18 @@ int read_page_ram(minipro_handle_t *handle, uint8_t *buffer, uint8_t type,
 	return EXIT_SUCCESS;
 }
 
+/* Check if first block of ds.data equals device erased state */
+int is_block_blank(minipro_handle_t *handle, data_set_t* ds)
+{
+	for (uint32_t i = 0; i < ds->size; i++) {
+		if (ds->data[i] != handle->device->blank_value) {
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
 int write_page_ram(minipro_handle_t *handle, uint8_t *buffer, uint8_t type,
 		   size_t size)
 {
@@ -1396,8 +1413,14 @@ int write_page_ram(minipro_handle_t *handle, uint8_t *buffer, uint8_t type,
 		if ((i + 1) * ds.size > size)
 			ds.size = size % ds.size;
 
-		if (minipro_write_block(handle, &ds))
-			return EXIT_FAILURE;
+		/* Check blank skip is enabled */
+		uint8_t skip_write = handle->cmdopts->blank_skip &&
+			is_block_blank(handle, &ds);
+
+		if (!skip_write) {
+			if (minipro_write_block(handle, &ds))
+				return EXIT_FAILURE;
+		}
 
 		ds.data += ds.size;
 		ds.init = 0;

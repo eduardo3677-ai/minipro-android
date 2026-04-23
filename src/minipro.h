@@ -312,6 +312,7 @@ typedef struct cmdopts_s {
 	uint8_t idcheck_continue;
 	uint8_t idcheck_only;
 	uint8_t pincheck;
+	uint8_t blank_skip;
 	uint8_t is_pipe;
 	uint8_t version;
 	uint8_t force_erase;

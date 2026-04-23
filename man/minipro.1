@@ -90,6 +90,13 @@ Blank check.
 Optionally, you can use \-c to specify a memory type.
 
 .TP
+.B \-B, \-\-skip_blank
+Skip writing blocks that are identical to the device's erased state.  This
+assumes the device has been erased prior to writing and is physically capable
+of random addressing.  Using with unsupported devices will result in incorrect
+programming and failed verification.
+
+.TP
 .B \-a <type>, \-\-auto_detect
 Auto-detect SPI 25xx devices.
 .br
