@@ -29,7 +29,7 @@ XGPRO_URL=https://github.com/Kreeblah/XGecu_Software/raw/refs/heads/master/Xgpro
 XGPRO_SHA256=821db3ef1cc2b335d8a1e50ad37161032f804c8626cd3c1e7d03695d9aa75b1d
 XGPRO_T76_SHA256=8541d3d0f47a5d7dc1727e7b6dc41db7bf1132a4b6b549f2947a8cd210c40490
 
-WORKDIR=`pwd`
+WORKDIR="$(pwd)"
 XGPRO_ALG="algorithm"
 XGPRO_T76_ALG="algoT76"
 ALG_FILENAME="algorithm.xml"
@@ -81,11 +81,11 @@ echo "Starting the Xgecu downloader."
 echo "** Where do I put the T56/T76 algorithms ($ALG_FILENAME) file?"
 
 if [ $1 ]; then
-	INSTALL_DIR=$1
+	INSTALL_DIR="$1"
 	echo "** I see you want me to install it to $INSTALL_DIR"
 	echo "** Checking to see if I can work on this stuff right here."
 
-	if [ -w $WORKDIR ]; then
+	if [ -w "$WORKDIR" ]; then
 		echo "   Success!"
 	else
 		echo "** Error: Unable to write to $WORKDIR."
@@ -95,14 +95,14 @@ if [ $1 ]; then
 
 	# Do we have write access now?
 	# No?  Then see if we can do it through sudo.
-	if ! [ -w $INSTALL_DIR ]; then
-		if [ ! -d $INSTALL_DIR ] ; then
+	if ! [ -w "$INSTALL_DIR" ]; then
+		if [ ! -d "$INSTALL_DIR" ] ; then
 			echo "** Error: $INSTALL_DIR doesn't exist.  Is minipro installed yet?"
 			exit
 		fi
 
 		echo "** Checking to see if I can write there as \"$USER\"."
-		if [ ! -w $INSTALL_DIR ] ; then
+		if [ ! -w "$INSTALL_DIR" ] ; then
 			echo "** Can't write there as \"$USER\".  Trying as the superuser."
 			if ! [ -x "$(command -v sudo)" ]; then
 				echo "** Error: sudo not found.  Install algorithms manually."
@@ -111,7 +111,7 @@ if [ $1 ]; then
 
 			sudo -u root bash -c : && RUNAS="sudo -u root"
 				$RUNAS bash<<-EOF
-				if [ -w $INSTALL_DIR ] ; then
+				if [ -w "$INSTALL_DIR" ] ; then
 					USE_ROOT=1
 					echo "   Success!"
 				else
@@ -124,7 +124,7 @@ if [ $1 ]; then
 else
 	# No target directory specified, so we'll just put the files into the
 	# current working directory.
-	INSTALL_DIR=$WORKDIR
+	INSTALL_DIR="$WORKDIR"
 	echo "** I'll just leave it right here."
 fi
 
@@ -181,11 +181,11 @@ fi
 if [ ! -f "$WORKDIR/$XGPRO_RAR" ] ; then
 	echo "** Downloading $XGPRO_RAR."
 #	echo "   doing $GETURL $WORKDIR/$XGPRO_RAR $XGPRO_URL/$XGPRO_RAR"
-	http_code="$($GETURL $WORKDIR/$XGPRO_RAR $XGPRO_URL/$XGPRO_RAR)"
+	http_code="$($GETURL "$WORKDIR/$XGPRO_RAR" "$XGPRO_URL/$XGPRO_RAR")"
 	RETVAL="$?"
 
-	if [ ! -s $WORKDIR/$XGPRO_RAR ] ; then
-		rm -f $WORKDIR/$XGPRO_RAR
+	if [ ! -s "$WORKDIR/$XGPRO_RAR" ] ; then
+		rm -f "$WORKDIR/$XGPRO_RAR"
 	fi
 else
 	echo "** $XGPRO_RAR already in $WORKDIR."
@@ -200,11 +200,11 @@ fi
 if [ ! -f "$WORKDIR/$XGPRO_T76_RAR" ] ; then
 	echo "** Downloading $XGPRO_T76_RAR."
 #	echo "   doing $GETURL $WORKDIR/$XGPRO_T76_RAR $XGPRO_URL/$XGPRO_T76_RAR"
-	http_code="$($GETURL $WORKDIR/$XGPRO_T76_RAR $XGPRO_URL/$XGPRO_T76_RAR)"
+	http_code="$($GETURL "$WORKDIR/$XGPRO_T76_RAR" "$XGPRO_URL/$XGPRO_T76_RAR")"
 	RETVAL="$?"
 
-	if [ ! -s $WORKDIR/$XGPRO_T76_RAR ] ; then
-		rm -f $WORKDIR/$XGPRO_T6_RAR
+	if [ ! -s "$WORKDIR/$XGPRO_T76_RAR" ] ; then
+		rm -f "$WORKDIR/$XGPRO_T76_RAR"
 	fi
 else
 	echo "** $XGPRO_T76_RAR already in $WORKDIR."
@@ -227,7 +227,7 @@ fi
 echo "** SHA256 checksum is good."
 
 echo "** Extracting."
-$TAR -x -O -f $WORKDIR/$XGPRO_RAR \
+$TAR -x -O -f "$WORKDIR/$XGPRO_RAR" \
 	| $TAR -x -f -  ${FIRMWARE_NAMES[*]} $XGPRO_ALG/*.alg
 
 echo "** Checking $XGPRO_T76_RAR."
@@ -241,7 +241,7 @@ fi
 echo "** SHA256 checksum is good."
 
 echo "** Extracting."
-$TAR -x -O -f $WORKDIR/$XGPRO_T76_RAR \
+$TAR -x -O -f "$WORKDIR/$XGPRO_T76_RAR" \
 	| $TAR -x -f -  $T76_FIRMWARE_NAME $XGPRO_T76_ALG/*.alg
 
 
@@ -314,10 +314,10 @@ rm -rf $XGPRO_ALG/
 rm -rf $XGPRO_T76_ALG/ 
 echo
 
-if [ $INSTALL_DIR != $WORKDIR ] ; then
+if [ "$INSTALL_DIR" != "$WORKDIR" ] ; then
 	echo "** Installing $ALG_FILENAME to $INSTALL_DIR."
 	if [ -n $USE_ROOT ] ; then
-		sudo cp $ALG_FILENAME $INSTALL_DIR
+		sudo cp $ALG_FILENAME "$INSTALL_DIR"
 	fi
 fi
 echo "** Done!"
