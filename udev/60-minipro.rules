@@ -21,12 +21,12 @@ ACTION!="add|change", GOTO="minipro_rules_end"
 SUBSYSTEM!="usb", GOTO="minipro_rules_end"
 
 # TL866A/CS
-ATTRS{idVendor}=="04d8", ATTRS{idProduct}=="e11c", ENV{ID_MINIPRO}="1"
+ATTRS{idVendor}=="04d8", ATTRS{idProduct}=="e11c", MODE="660", GROUP="plugdev", TAG+="uaccess"
 
 # TL866II+, T48, T56
-ATTRS{idVendor}=="a466", ATTRS{idProduct}=="0a53", ENV{ID_MINIPRO}="1"
+ATTRS{idVendor}=="a466", ATTRS{idProduct}=="0a53", MODE="660", GROUP="plugdev", TAG+="uaccess"
 
 # T76
-ATTRS{idVendor}=="a466", ATTRS{idProduct}=="1a86", ENV{ID_MINIPRO}="1"
+ATTRS{idVendor}=="a466", ATTRS{idProduct}=="1a86", MODE="660", GROUP="plugdev", TAG+="uaccess"
 
 LABEL="minipro_rules_end"

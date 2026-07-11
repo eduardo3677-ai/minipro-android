@@ -21,7 +21,6 @@ override_dh_auto_install:
 	    DESTDIR=$(DESTDIR) \
 	    PREFIX=$(PREFIX)
 
-# XXX Figure out how to handle 61-minipro-*.rules
 override_dh_installudev:
 	cp udev/60-minipro.rules debian/minipro.udev
 	dh_installudev

@@ -147,6 +147,7 @@ clean:
 distclean: clean
 	rm -f *.rar
 	rm -rf $(DIST_DIR)*
+	rm -rf *~ .*~
 
 algorithm: $(ALGORITHM)
 $(ALGORITHM):
@@ -168,8 +169,6 @@ install:
 	if [ -n "$(UDEV_DIR)" ]; then \
 		mkdir -p $(UDEV_RULES_INSTDIR); \
 		cp udev/60-minipro.rules $(UDEV_RULES_INSTDIR)/; \
-		cp udev/61-minipro-plugdev.rules $(UDEV_RULES_INSTDIR)/; \
-		cp udev/61-minipro-uaccess.rules $(UDEV_RULES_INSTDIR)/; \
 	fi
 	if [ -n "$(COMPLETIONS_DIR)" ]; then \
 		mkdir -p $(COMPLETIONS_INSTDIR); \
@@ -183,8 +182,6 @@ uninstall:
 	rm -f $(SHARE_INSTDIR)/$(ALGORITHM)
 	rm -f $(MAN_INSTDIR)/minipro.1
 	if [ -n "$(UDEV_DIR)" ]; then rm -f $(UDEV_RULES_INSTDIR)/60-minipro.rules; fi
-	if [ -n "$(UDEV_DIR)" ]; then rm -f $(UDEV_RULES_INSTDIR)/61-minipro-plugdev.rules; fi
-	if [ -n "$(UDEV_DIR)" ]; then rm -f $(UDEV_RULES_INSTDIR)/61-minipro-uaccess.rules; fi
 	if [ -n "$(COMPLETIONS_DIR)" ]; then rm -f $(COMPLETIONS_INSTDIR)/minipro; fi
 
 install_library:
