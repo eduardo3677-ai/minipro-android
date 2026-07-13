@@ -33,8 +33,6 @@ make %{?_smp_mflags} PREFIX=%{_prefix}
 make install DESTDIR=%{buildroot} PREFIX=%{_prefix}
 
 install -D -p -m 0644 udev/60-minipro.rules %{buildroot}/%{_udevrulesdir}/60-minipro.rules
-install -D -p -m 0644 udev/61-minipro-plugdev.rules %{buildroot}/%{_udevrulesdir}/61-minipro-plugdev.rules
-install -D -p -m 0644 udev/61-minipro-uaccess.rules %{buildroot}/%{_udevrulesdir}/61-minipro-uaccess.rules
 install -D -p -m 0644 bash_completion.d/minipro %{buildroot}/%{completions_dir}/minipro
 
 %files
