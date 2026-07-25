@@ -40,7 +40,8 @@ add_library(
         minipro_src/version.c
 )
 
-target_include_directories(minipro PRIVATE minipro_src)
+target_include_directories(minipro PRIVATE minipro_src libusb/libusb)
+target_compile_definitions(minipro PRIVATE SHARE_INSTDIR="")
 
 find_library(log-lib log)
 
