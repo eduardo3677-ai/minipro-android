@@ -10,9 +10,19 @@ add_library(
         minipro_src/database.c
         minipro_src/usb_nix.c
         minipro_src/t48.c
+        minipro_src/t56.c
+        minipro_src/t76.c
         minipro_src/tl866iiplus.c
+        minipro_src/tl866a.c
         minipro_src/bitbang.c
         minipro_src/jedec.c
+        minipro_src/xml.c
+        minipro_src/ihex.c
+        minipro_src/srec.c
+        minipro_src/prom.c
+        minipro_src/cdecode.c
+        minipro_src/cencode.c
+        minipro_src/version.c
 )
 
 target_include_directories(minipro PRIVATE minipro_src)
