@@ -54,10 +54,10 @@ fun MainScreen(
                 title = { Text(stringResource(R.string.app_name)) },
                 actions = {
                     IconButton(onClick = onOpenDebugClick) {
-                        Icon(Icons.Default.BugReport, contentDescription = "Debug", tint = Color(0xFFFF5252))
+                        Icon(Icons.Default.BugReport, contentDescription = stringResource(R.string.content_desc_debug), tint = Color(0xFFFF5252))
                     }
                     IconButton(onClick = onOpenSettingsClick) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+                        Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.content_desc_settings))
                     }
                 }
             )
@@ -115,7 +115,7 @@ fun MainScreen(
                             // Simularemos cargar la imagen T48SOP44.jpg desde assets/img/ basándonos en el tipo de paquete
                             Icon(
                                 imageVector = Icons.Default.Memory,
-                                contentDescription = "Chip Image",
+                                contentDescription = stringResource(R.string.content_desc_chip_image),
                                 modifier = Modifier.size(32.dp).padding(end = 8.dp),
                                 tint = MaterialTheme.colorScheme.primary
                             )
@@ -132,7 +132,7 @@ fun MainScreen(
                         }
                     }
                     IconButton(onClick = onAutoDetectClick) {
-                        Icon(Icons.Default.AutoFixHigh, contentDescription = "SPI Auto-Detect")
+                        Icon(Icons.Default.AutoFixHigh, contentDescription = stringResource(R.string.content_desc_autodetect))
                     }
                     Button(onClick = onSelectChipClick) {
                         Text(stringResource(R.string.btn_select_chip))
@@ -160,7 +160,7 @@ fun MainScreen(
                 Button(onClick = onBatchProgramClick, enabled = isConnected, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)) {
                     Icon(Icons.Default.AutoMode, contentDescription = null)
                     Spacer(Modifier.width(4.dp))
-                    Text("Auto")
+                    Text(stringResource(R.string.btn_auto))
                 }
                 OutlinedButton(onClick = onBlankCheckClick, enabled = isConnected) {
                     Text(stringResource(R.string.btn_blank_check))
@@ -181,28 +181,28 @@ fun MainScreen(
                     selected = false,
                     onClick = onReadFusesClick,
                     enabled = isConnected,
-                    label = { Text("Fuses / Config") },
+                    label = { Text(stringResource(R.string.btn_fuses)) },
                     leadingIcon = { Icon(Icons.Default.SettingsSuggest, contentDescription = null, modifier = Modifier.size(16.dp)) }
                 )
                 FilterChip(
                     selected = false,
                     onClick = onReadOtpClick,
                     enabled = isConnected,
-                    label = { Text("OTP User") },
+                    label = { Text(stringResource(R.string.btn_otp)) },
                     leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(16.dp)) }
                 )
                 FilterChip(
                     selected = false,
                     onClick = onUnlockTsop48Click,
                     enabled = isConnected,
-                    label = { Text("TSOP48 Unlock") },
+                    label = { Text(stringResource(R.string.btn_tsop48)) },
                     leadingIcon = { Icon(Icons.Default.Key, contentDescription = null, modifier = Modifier.size(16.dp)) }
                 )
                 FilterChip(
                     selected = false,
                     onClick = onLogicTestClick,
                     enabled = isConnected,
-                    label = { Text("Logic Test") },
+                    label = { Text(stringResource(R.string.btn_logic_test)) },
                     leadingIcon = { Icon(Icons.Default.Rule, contentDescription = null, modifier = Modifier.size(16.dp)) }
                 )
             }
@@ -217,18 +217,18 @@ fun MainScreen(
                 Text(stringResource(R.string.header_hex_viewer), fontWeight = FontWeight.Bold)
                 Row {
                     IconButton(onClick = { /* TODO: Mostrar Dialog Go To Address */ }) {
-                        Icon(Icons.Default.LocationOn, contentDescription = "Go to Address", tint = MaterialTheme.colorScheme.primary)
+                        Icon(Icons.Default.LocationOn, contentDescription = stringResource(R.string.content_desc_goto), tint = MaterialTheme.colorScheme.primary)
                     }
                     IconButton(onClick = { /* TODO: Mostrar Dialog Búsqueda Hex/ASCII */ }) {
-                        Icon(Icons.Default.Search, contentDescription = "Buscar Texto/Hex", tint = MaterialTheme.colorScheme.primary)
+                        Icon(Icons.Default.Search, contentDescription = stringResource(R.string.content_desc_search), tint = MaterialTheme.colorScheme.primary)
                     }
                     IconButton(onClick = { /* TODO: Mostrar Dialog Opciones Guardar Dump (BIN/HEX) */ }) {
-                        Icon(Icons.Default.Save, contentDescription = "Guardar Dump", tint = MaterialTheme.colorScheme.primary)
+                        Icon(Icons.Default.Save, contentDescription = stringResource(R.string.content_desc_save), tint = MaterialTheme.colorScheme.primary)
                     }
                     TextButton(onClick = onLoadFileClick) {
                         Icon(Icons.Default.FileOpen, contentDescription = null)
                         Spacer(Modifier.width(4.dp))
-                        Text("Cargar Dump")
+                        Text(stringResource(R.string.btn_load_dump))
                     }
                 }
             }

@@ -18,6 +18,29 @@
     <string name="btn_autodetect">Auto Detect</string>
     <string name="btn_select_chip">Select Chip</string>
     <string name="label_active_chip">Active Chip:</string>
+    <string name="btn_auto">Auto</string>
+    <string name="btn_fuses">Fuses / Config</string>
+    <string name="btn_otp">OTP User</string>
+    <string name="btn_tsop48">TSOP48 Unlock</string>
+    <string name="btn_logic_test">Logic Test</string>
+    <string name="btn_load_dump">Cargar Dump</string>
+    <string name="content_desc_goto">Go to Address</string>
+    <string name="content_desc_search">Buscar Texto/Hex</string>
+    <string name="content_desc_save">Guardar Dump</string>
+    <string name="content_desc_debug">Debug</string>
+    <string name="content_desc_settings">Settings</string>
+    <string name="content_desc_chip_image">Chip Image</string>
+    <string name="content_desc_autodetect">SPI Auto-Detect</string>
+    
+    <!-- Debug Panel -->
+    <string name="debug_title">Modo Depuración &amp; Hardware Debug</string>
+    <string name="debug_console_title">Consola de Envío Directo de Opcodes USB</string>
+    <string name="debug_opcode_label">Opcode Hex (ej: 05, 37, 39, 1B)</string>
+    <string name="debug_btn_send">Enviar Packet</string>
+    <string name="debug_btn_voltages">Medir Voltajes</string>
+    <string name="debug_btn_reset_pins">Reset Pins</string>
+    <string name="debug_btn_self_check">Self Check</string>
+    <string name="debug_log_title">Traza de Logs Verbosos (Packet Dump)</string>
 
     <!-- Onboarding -->
     <string name="onboarding_title">Welcome to FlashLabs</string>

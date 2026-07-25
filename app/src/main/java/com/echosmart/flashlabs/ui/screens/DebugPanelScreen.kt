@@ -16,7 +16,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
+import com.echosmart.flashlabs.R
 import com.echosmart.flashlabs.ui.viewmodel.ProgrammerViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,7 +38,7 @@ fun DebugPanelScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.BugReport, contentDescription = null, tint = Color(0xFFFF5252))
                         Spacer(Modifier.width(8.dp))
-                        Text("Modo Depuración & Hardware Debug")
+                        Text(stringResource(R.string.debug_title))
                     }
                 },
                 navigationIcon = {
@@ -60,13 +62,13 @@ fun DebugPanelScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Consola de Envío Directo de Opcodes USB", fontWeight = FontWeight.Bold, color = Color(0xFF00E5FF))
+                    Text(stringResource(R.string.debug_console_title), fontWeight = FontWeight.Bold, color = Color(0xFF00E5FF))
                     Spacer(Modifier.height(8.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         OutlinedTextField(
                             value = opcodeInput,
                             onValueChange = { opcodeInput = it },
-                            label = { Text("Opcode Hex (ej: 05, 37, 39, 1B)") },
+                            label = { Text(stringResource(R.string.debug_opcode_label)) },
                             modifier = Modifier.weight(1f)
                         )
                         Spacer(Modifier.width(8.dp))
@@ -77,7 +79,7 @@ fun DebugPanelScreen(
                             },
                             enabled = isConnected
                         ) {
-                            Text("Enviar Packet")
+                            Text(stringResource(R.string.debug_btn_send))
                         }
                     }
                 }
@@ -93,20 +95,20 @@ fun DebugPanelScreen(
                 OutlinedButton(onClick = { viewModel.readVoltagesHardware() }, enabled = isConnected) {
                     Icon(Icons.Default.ElectricMeter, contentDescription = null)
                     Spacer(Modifier.width(4.dp))
-                    Text("Medir Voltajes")
+                    Text(stringResource(R.string.debug_btn_voltages))
                 }
                 OutlinedButton(onClick = { viewModel.resetPinDriversHardware() }, enabled = isConnected) {
                     Icon(Icons.Default.RestartAlt, contentDescription = null)
                     Spacer(Modifier.width(4.dp))
-                    Text("Reset Pins")
+                    Text(stringResource(R.string.debug_btn_reset_pins))
                 }
                 OutlinedButton(onClick = { viewModel.testHardwareSelfCheck() }, enabled = isConnected) {
-                    Text("Self Check")
+                    Text(stringResource(R.string.debug_btn_self_check))
                 }
             }
 
             Spacer(Modifier.height(16.dp))
-            Text("Traza de Logs Verbosos (Packet Dump)", fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.debug_log_title), fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(4.dp))
 
             Surface(
