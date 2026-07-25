@@ -82,6 +82,8 @@ void print_hex(const uint8_t *buffer, int size, uint8_t endpoint)
 /* Open usb device */
 void *usb_open(uint8_t verbose)
 {
+	uint16_t vid = 0;
+	uint16_t pid = 0;
 	usb_id_t usb_ids[] = { { .vid = MP_TL866_VID, .pid = MP_TL866_PID },
 			       { .vid = MP_TL866II_VID, .pid = MP_TL866II_PID },
 			       { .vid = MP_T76_VID, .pid = MP_T76_PID } };
@@ -100,11 +102,17 @@ void *usb_open(uint8_t verbose)
 #ifdef __ANDROID__
 	if (global_usb_fd >= 0) {
 		libusb_wrap_sys_device(NULL, global_usb_fd, (libusb_device_handle**)&usb_handle);
+		if (usb_handle) {
+			libusb_device *dev = libusb_get_device(usb_handle);
+			struct libusb_device_descriptor desc;
+			if (libusb_get_device_descriptor(dev, &desc) == 0) {
+				vid = desc.idVendor;
+				pid = desc.idProduct;
+			}
+		}
 	} else
 #endif
 	{
-		uint16_t vid;
-		uint16_t pid;
 		for (int i = 0;
 		     i < sizeof(usb_ids) / sizeof(usb_ids[0]) && usb_handle == NULL;
 		     i++) {
