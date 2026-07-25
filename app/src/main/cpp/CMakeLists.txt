@@ -12,6 +12,7 @@ add_library(libusb_local STATIC
     libusb/libusb/os/linux_usbfs.c
     libusb/libusb/os/linux_netlink.c
     libusb/libusb/os/threads_posix.c
+    libusb/libusb/os/events_posix.c
 )
 target_include_directories(libusb_local PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/libusb/libusb)
 target_include_directories(libusb_local PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/libusb/android)
@@ -45,9 +46,11 @@ target_include_directories(minipro PRIVATE minipro_src libusb/libusb)
 target_compile_definitions(minipro PRIVATE SHARE_INSTDIR="")
 
 find_library(log-lib log)
+find_library(z-lib z)
 
 target_link_libraries(
         minipro
         libusb_local
         ${log-lib}
+        ${z-lib}
 )
