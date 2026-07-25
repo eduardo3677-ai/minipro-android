@@ -1,5 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Dark OLED Theme -->
+    <color name="dark_oled_primary">#00E676</color>
+    <color name="dark_oled_secondary">#2979FF</color>
+    <color name="dark_oled_background">#000000</color>
+    <color name="dark_oled_surface">#121212</color>
+
+    <!-- Light Pro Theme -->
+    <color name="light_pro_primary">#1976D2</color>
+    <color name="light_pro_secondary">#388E3C</color>
+    <color name="light_pro_background">#F8F9FA</color>
+    <color name="light_pro_surface">#FFFFFF</color>
+
+    <!-- Cyberpunk Theme -->
+    <color name="cyberpunk_primary">#FF007F</color>
+    <color name="cyberpunk_secondary">#00F0FF</color>
+    <color name="cyberpunk_background">#0D0221</color>
+    <color name="cyberpunk_surface">#190933</color>
+
+    <!-- Retro Amber Theme -->
+    <color name="retro_amber_primary">#FFB300</color>
+    <color name="retro_amber_secondary">#FF6F00</color>
+    <color name="retro_amber_background">#1A1100</color>
+    <color name="retro_amber_surface">#261900</color>
+
+    <!-- Legacy Base Colors (from old config) -->
     <color name="primary">#00BCD4</color>
     <color name="primary_dark">#0097A7</color>
     <color name="accent">#FF4081</color>
