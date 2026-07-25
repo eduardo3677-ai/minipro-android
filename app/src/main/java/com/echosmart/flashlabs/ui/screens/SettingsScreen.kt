@@ -52,7 +52,7 @@ fun SettingsScreen(
                 FilterChip(
                     selected = currentTheme == AppTheme.DARK_OLED,
                     onClick = { onThemeSelected(AppTheme.DARK_OLED) },
-                    label = { Text("OLED") }
+                    label = { Text(stringResource(R.string.theme_dark_oled)) }
                 )
                 FilterChip(
                     selected = currentTheme == AppTheme.LIGHT_PRO,
@@ -62,7 +62,7 @@ fun SettingsScreen(
                 FilterChip(
                     selected = currentTheme == AppTheme.CYBERPUNK,
                     onClick = { onThemeSelected(AppTheme.CYBERPUNK) },
-                    label = { Text("Cyberpunk") }
+                    label = { Text(stringResource(R.string.theme_cyber)) }
                 )
                 FilterChip(
                     selected = currentTheme == AppTheme.RETRO_AMBER,
@@ -82,13 +82,13 @@ fun SettingsScreen(
                 FilterChip(
                     selected = currentLanguage == "es",
                     onClick = { onLanguageSelected("es") },
-                    label = { Text("Español") }
+                    label = { Text(stringResource(R.string.lang_es)) }
                 )
                 Spacer(Modifier.width(12.dp))
                 FilterChip(
                     selected = currentLanguage == "en",
                     onClick = { onLanguageSelected("en") },
-                    label = { Text("English") }
+                    label = { Text(stringResource(R.string.lang_en)) }
                 )
             }
 
