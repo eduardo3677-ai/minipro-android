@@ -96,14 +96,22 @@ void *usb_open(uint8_t verbose)
 
 	/* Loop trough each known VID/PID */
 	void *usb_handle = NULL;
-	uint16_t vid;
-	uint16_t pid;
-	for (int i = 0;
-	     i < sizeof(usb_ids) / sizeof(usb_ids[0]) && usb_handle == NULL;
-	     i++) {
-		vid = usb_ids[i].vid;
-		pid = usb_ids[i].pid;
-		usb_handle = libusb_open_device_with_vid_pid(NULL, vid, pid);
+	extern int global_usb_fd;
+#ifdef __ANDROID__
+	if (global_usb_fd >= 0) {
+		libusb_wrap_sys_device(NULL, global_usb_fd, (libusb_device_handle**)&usb_handle);
+	} else
+#endif
+	{
+		uint16_t vid;
+		uint16_t pid;
+		for (int i = 0;
+		     i < sizeof(usb_ids) / sizeof(usb_ids[0]) && usb_handle == NULL;
+		     i++) {
+			vid = usb_ids[i].vid;
+			pid = usb_ids[i].pid;
+			usb_handle = libusb_open_device_with_vid_pid(NULL, vid, pid);
+		}
 	}
 
 	/* If we don't get any connected device report error in connecting */

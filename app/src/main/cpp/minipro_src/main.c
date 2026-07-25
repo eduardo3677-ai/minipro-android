@@ -3454,8 +3454,10 @@ int action_verify(minipro_handle_t *handle)
 }
 
 /* Program Main entry point */
-int main(int argc, char **argv)
+int global_usb_fd = -1;
+int minipro_main(int argc, char **argv, int usb_fd)
 {
+    global_usb_fd = usb_fd;
 /* If we are in windows start the VT100 support.
 *  Set the Windows translation mode to binary.
 */
