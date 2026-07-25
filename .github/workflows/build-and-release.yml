@@ -41,11 +41,22 @@ jobs:
     - name: Build ${{ matrix.build_type }} APK
       run: ./gradlew assemble${{ matrix.build_type }} --stacktrace
 
+    - name: Rename APK
+      id: rename
+      run: |
+        COMMIT_ID=$(git rev-parse --short HEAD)
+        VERSION="${{ steps.version.outputs.version }}"
+        BUILD_TYPE="${{ matrix.build_type }}"
+        APK_DIR=$(dirname "${{ matrix.apk_path }}")
+        NEW_APK_NAME="FlashLabs-${VERSION}-${COMMIT_ID}-${BUILD_TYPE}.apk"
+        mv "${{ matrix.apk_path }}" "${APK_DIR}/${NEW_APK_NAME}"
+        echo "new_apk_path=${APK_DIR}/${NEW_APK_NAME}" >> $GITHUB_OUTPUT
+
     - name: Upload ${{ matrix.build_type }} APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: FlashLabs-${{ matrix.build_type }}-${{ steps.version.outputs.version }}
-        path: ${{ matrix.apk_path }}
+        path: ${{ steps.rename.outputs.new_apk_path }}
 
   release:
     needs: build
