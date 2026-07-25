@@ -13,7 +13,8 @@ add_library(libusb_local STATIC
     libusb/libusb/os/linux_netlink.c
     libusb/libusb/os/threads_posix.c
 )
-target_include_directories(libusb_local PUBLIC libusb/libusb libusb/android)
+target_include_directories(libusb_local PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/libusb/libusb)
+target_include_directories(libusb_local PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/libusb/android)
 target_compile_definitions(libusb_local PRIVATE OS_LINUX PLATFORM_POSIX HAVE_LINUX_NETLINK_H)
 
 add_library(
