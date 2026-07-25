@@ -6,6 +6,5 @@
 #define GIT_BRANCH "master"
 #define GIT_HASH "android-port"
 #define GIT_DATE "2026-07-25"
-#define SHARE_INSTDIR "/usr/local/share/minipro"
 
 #endif
