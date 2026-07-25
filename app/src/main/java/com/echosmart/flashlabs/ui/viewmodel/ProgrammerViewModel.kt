@@ -8,6 +8,7 @@ import com.echosmart.flashlabs.data.model.HexBuffer
 import com.echosmart.flashlabs.data.model.XGecuChipDevice
 import com.echosmart.flashlabs.data.repository.ChipRepository
 import com.echosmart.flashlabs.data.repository.UsbRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
