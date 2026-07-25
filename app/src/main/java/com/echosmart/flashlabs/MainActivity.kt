@@ -79,7 +79,20 @@ fun FlashLabsApp() {
     FlashLabsTheme(theme = theme) {
         Surface(modifier = Modifier.fillMaxSize()) {
             if (!isOnboardingCompleted) {
-                OnboardingScreen(onComplete = { isOnboardingCompleted = true })
+                OnboardingScreen(onComplete = { 
+                    val device = usbRepository.findT48Device()
+                    if (device != null && !usbManager.hasPermission(device)) {
+                        val intent = android.content.Intent("com.echosmart.flashlabs.USB_PERMISSION")
+                        val flags = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                            android.app.PendingIntent.FLAG_MUTABLE or android.app.PendingIntent.FLAG_UPDATE_CURRENT
+                        } else {
+                            android.app.PendingIntent.FLAG_UPDATE_CURRENT
+                        }
+                        val permissionIntent = android.app.PendingIntent.getBroadcast(context, 0, intent, flags)
+                        usbManager.requestPermission(device, permissionIntent)
+                    }
+                    isOnboardingCompleted = true 
+                })
             } else {
                 AnimatedContent(
                     targetState = currentScreen,
