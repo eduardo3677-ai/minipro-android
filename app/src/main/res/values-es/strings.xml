@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FlashLabs T48</string>
+    <string name="app_subtitle">Programador Hardware EEPROM/MCU XGecu T48</string>
+    <string name="title_settings">Configuración</string>
+
+    <!-- Connection status -->
+    <string name="status_connected">PROGRAMADOR T48 CONECTADO</string>
+    <string name="status_disconnected">T48 DESCONECTADO</string>
+    <string name="status_connect_prompt">Conecte el XGecu T48 mediante un adaptador USB-C OTG</string>
+    <string name="btn_connect">Conectar</string>
+
+    <!-- Main Actions -->
+    <string name="btn_read">Leer</string>
+    <string name="btn_write">Programar</string>
+    <string name="btn_blank_check">Blank Check</string>
+    <string name="btn_erase">Borrar</string>
+    <string name="btn_autodetect">Auto Detección</string>
+    <string name="btn_select_chip">Seleccionar Chip</string>
+    <string name="label_active_chip">Chip Activo:</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_title">Bienvenido a FlashLabs</string>
+    <string name="onboarding_subtitle">Programador de hardware USB OTG profesional para Android</string>
+    <string name="onboarding_req_1">1. Conecte el XGecu T48 usando un adaptador USB-C OTG.</string>
+    <string name="onboarding_req_2">2. Conceda permiso USB cuando se le solicite (Sin Root).</string>
+    <string name="onboarding_req_3">3. Acceso a almacenamiento para guardar/cargar archivos BIN, HEX y JED.</string>
+    <string name="btn_get_started">Comenzar</string>
+
+    <!-- Settings -->
+    <string name="setting_theme">Tema de Interfaz</string>
+    <string name="setting_language">Idioma de la App</string>
+    <string name="setting_auto_connect">Conexión automática al insertar USB</string>
+    <string name="setting_read_id">Leer Chip ID automáticamente al conectar</string>
+    <string name="setting_verify_write">Verificar tras escribir</string>
+    <string name="setting_fill_byte">Byte por defecto del buffer</string>
+    <string name="setting_usb_timeout">Tiempo de espera USB (ms)</string>
+
+    <!-- Headers -->
+    <string name="header_hex_viewer">Visor de Buffer Hexadecimal</string>
+    <string name="header_logs">Consola de Operaciones y Registros</string>
+</resources>

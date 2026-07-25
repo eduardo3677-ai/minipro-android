@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FlashLabs T48</string>
+    <string name="app_subtitle">XGecu T48 Hardware EEPROM/MCU Programmer</string>
+    <string name="title_settings">Settings</string>
+
+    <!-- Connection status -->
+    <string name="status_connected">T48 PROGRAMMER CONNECTED</string>
+    <string name="status_disconnected">T48 DISCONNECTED</string>
+    <string name="status_connect_prompt">Insert XGecu T48 with USB-C OTG Adapter</string>
+    <string name="btn_connect">Connect</string>
+
+    <!-- Main Actions -->
+    <string name="btn_read">Read</string>
+    <string name="btn_write">Program</string>
+    <string name="btn_blank_check">Blank Check</string>
+    <string name="btn_erase">Erase</string>
+    <string name="btn_autodetect">Auto Detect</string>
+    <string name="btn_select_chip">Select Chip</string>
+    <string name="label_active_chip">Active Chip:</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_title">Welcome to FlashLabs</string>
+    <string name="onboarding_subtitle">Professional USB OTG hardware programmer for Android</string>
+    <string name="onboarding_req_1">1. Connect XGecu T48 using a USB-C OTG Adapter.</string>
+    <string name="onboarding_req_2">2. Allow USB permission when prompted (No Root Required).</string>
+    <string name="onboarding_req_3">3. Storage access for loading/saving BIN, HEX &amp; JED files.</string>
+    <string name="btn_get_started">Get Started</string>
+
+    <!-- Settings -->
+    <string name="setting_theme">UI Theme</string>
+    <string name="setting_language">App Language</string>
+    <string name="setting_auto_connect">Auto-Connect on USB Plug</string>
+    <string name="setting_read_id">Auto-Read Chip ID on Connect</string>
+    <string name="setting_verify_write">Verify After Write</string>
+    <string name="setting_fill_byte">Buffer Default Fill Byte</string>
+    <string name="setting_usb_timeout">USB Transfer Timeout (ms)</string>
+
+    <!-- Headers -->
+    <string name="header_hex_viewer">Hex Data Buffer Viewer</string>
+    <string name="header_logs">Operations Log Terminal</string>
+</resources>
