@@ -77,7 +77,7 @@ fun FlashLabsApp() {
     }
 
     FlashLabsTheme(theme = theme) {
-        Surface(modifier = Modifier.fillMaxSize()) {
+        Surface(modifier = Modifier.fillMaxSize().systemBarsPadding()) {
             if (!isOnboardingCompleted) {
                 OnboardingScreen(onComplete = { 
                     val device = usbRepository.findT48Device()
