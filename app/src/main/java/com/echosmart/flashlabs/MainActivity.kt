@@ -52,7 +52,7 @@ fun FlashLabsApp() {
     val usbManager = remember { context.getSystemService(Context.USB_SERVICE) as UsbManager }
     val usbRepository = remember { UsbRepository(usbManager) }
     val viewModel = remember { ProgrammerViewModel(usbRepository) }
-    val settingsViewModel = remember { SettingsViewModel() }
+    val settingsViewModel = remember { SettingsViewModel(context.applicationContext as android.app.Application) }
 
     val isConnected by viewModel.isConnected.collectAsState()
     val statusText by viewModel.statusText.collectAsState()

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="theme_options">
+        <item>@string/theme_dark_oled</item>
+        <item>@string/theme_hacker</item>
+        <item>@string/theme_cyber</item>
+    </string-array>
+    <string-array name="language_options">
+        <item>@string/lang_es</item>
+        <item>@string/lang_en</item>
+    </string-array>
+</resources>

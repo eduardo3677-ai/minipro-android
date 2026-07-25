@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <bool name="default_auto_connect">true</bool>
+    <bool name="default_read_id">true</bool>
+    <bool name="default_verify">true</bool>
+</resources>

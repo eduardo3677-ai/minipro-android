@@ -39,4 +39,9 @@
     <!-- Headers -->
     <string name="header_hex_viewer">Hex Data Buffer Viewer</string>
     <string name="header_logs">Operations Log Terminal</string>
+    <string name="theme_dark_oled">Dark OLED</string>
+    <string name="theme_hacker">Hacker Green</string>
+    <string name="theme_cyber">Cyberpunk</string>
+    <string name="lang_es">Español</string>
+    <string name="lang_en">English</string>
 </resources>
